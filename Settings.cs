@@ -56,6 +56,11 @@ public sealed class Settings
 
     public double OutputGainDb { get; set; }
 
+    // App-level (not part of the DSP chain).
+    public bool AutoStartProcessing { get; set; }
+    public bool StartMinimized { get; set; } = true;
+    public bool VisualMode { get; set; }
+
     public static Settings CaptureFrom(DspChain c)
     {
         var s = new Settings
