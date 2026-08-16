@@ -29,6 +29,7 @@ public sealed class MainViewModel : ViewModelBase
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke());
         ShowProcessorCommand = new RelayCommand(() => SetPage("processor"));
         ShowSettingsCommand = new RelayCommand(() => SetPage("settings"));
+        ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -58,6 +59,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ExitCommand { get; }
     public RelayCommand ShowProcessorCommand { get; }
     public RelayCommand ShowSettingsCommand { get; }
+    public RelayCommand ToggleBypassCommand { get; }
 
     // ---- navigation ----
     private string _page = "processor";
@@ -143,6 +145,27 @@ public sealed class MainViewModel : ViewModelBase
 
     private bool _visualMode;
     public bool VisualMode { get => _visualMode; set => Set(ref _visualMode, value); }
+
+    private bool _bypassed;
+    public bool Bypassed
+    {
+        get => _bypassed;
+        set { if (Set(ref _bypassed, value)) _engine.Chain.Bypass = value; }
+    }
+
+    public string[] PresetNames => BuiltInPresets.Names;
+
+    private string _selectedPresetName;
+    public string SelectedPresetName
+    {
+        get => _selectedPresetName;
+        set
+        {
+            if (!Set(ref _selectedPresetName, value) || string.IsNullOrEmpty(value)) return;
+            BuiltInPresets.Apply(value, _engine.Chain);
+            BuildStages();
+        }
+    }
 
     public string VersionText => "MicForge · v0.2 · PolyForm Noncommercial 1.0.0";
 

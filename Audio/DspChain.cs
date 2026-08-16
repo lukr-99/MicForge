@@ -20,6 +20,7 @@ public sealed class DspChain
 
     public volatile float InputPeak;
     public volatile float OutputPeak;
+    public volatile bool Bypass;
 
     public const int SpectrumSamples = 2048;
     private readonly float[] _spec = new float[SpectrumSamples];
@@ -63,6 +64,8 @@ public sealed class DspChain
             if (a > ip) ip = a;
         }
         InputPeak = ip;
+
+        if (Bypass) { OutputPeak = ip; return; }
 
         foreach (var p in _chain) p.Process(buffer, offset, count);
 
