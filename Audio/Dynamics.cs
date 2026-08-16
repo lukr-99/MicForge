@@ -20,6 +20,11 @@ public sealed class NoiseGate : IAudioProcessor
     public double ReleaseMs { get; set; } = 200;
     public double RangeDb { get; set; } = -70;   // attenuation applied when fully closed
 
+    /// <summary>Current detector level in dB (for metering).</summary>
+    public double DetectorDb { get; private set; } = -100;
+    /// <summary>Current attenuation applied in dB, &lt;= 0 (for metering).</summary>
+    public double ReductionDb { get; private set; }
+
     public void Process(float[] buffer, int offset, int count)
     {
         if (!Enabled) return;
@@ -45,6 +50,9 @@ public sealed class NoiseGate : IAudioProcessor
             _env = target + (_env - target) * coef;
             buffer[i] = (float)(buffer[i] * _env);
         }
+
+        DetectorDb = 20 * Math.Log10(_detect + 1e-9);
+        ReductionDb = 20 * Math.Log10(_env + 1e-9);
     }
 
     public void Reset() { _env = 1.0; _hold = 0; _detect = 0; }
@@ -131,6 +139,11 @@ public sealed class DeEsser : IAudioProcessor
     public double ThresholdDb { get; set; } = -28;
     public double Ratio { get; set; } = 4;
 
+    /// <summary>Current sibilance-band level in dB (for metering).</summary>
+    public double DetectorDb { get; private set; } = -100;
+    /// <summary>Current reduction applied in dB, &lt;= 0 (for metering).</summary>
+    public double ReductionDb { get; private set; }
+
     private void Update()
     {
         _highSplit.Set(Biquad.FilterType.HighPass, Frequency, _sr, 0.707);
@@ -161,7 +174,10 @@ public sealed class DeEsser : IAudioProcessor
             double g = Math.Pow(10, grDb / 20.0);
 
             buffer[i] = (float)(x + (g - 1.0) * high);
+            ReductionDb = grDb;
         }
+
+        DetectorDb = _envDb;
     }
 
     public void Reset() { _highSplit.Reset(); _detBand.Reset(); _envDb = -100; }

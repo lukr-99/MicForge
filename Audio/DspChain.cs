@@ -21,6 +21,11 @@ public sealed class DspChain
     public volatile float InputPeak;
     public volatile float OutputPeak;
 
+    public const int SpectrumSamples = 2048;
+    private readonly float[] _spec = new float[SpectrumSamples];
+    private int _specPos;
+    private readonly object _specLock = new();
+
     public DspChain(double sampleRate)
     {
         InputGain = new GainStage("Input Gain");
@@ -41,6 +46,16 @@ public sealed class DspChain
 
     public void Process(float[] buffer, int offset, int count)
     {
+        // Snapshot the raw input for the spectrum analyzer.
+        lock (_specLock)
+        {
+            for (int i = offset; i < offset + count; i++)
+            {
+                _spec[_specPos] = buffer[i];
+                if (++_specPos == SpectrumSamples) _specPos = 0;
+            }
+        }
+
         float ip = 0;
         for (int i = offset; i < offset + count; i++)
         {
@@ -65,6 +80,22 @@ public sealed class DspChain
         foreach (var p in _chain) p.Reset();
         InputPeak = 0;
         OutputPeak = 0;
+    }
+
+    /// <summary>Copies the most recent samples (oldest-first) for spectrum analysis.</summary>
+    public void CopySpectrum(float[] dest)
+    {
+        int n = dest.Length;
+        lock (_specLock)
+        {
+            int idx = _specPos - n;
+            while (idx < 0) idx += SpectrumSamples;
+            for (int i = 0; i < n; i++)
+            {
+                dest[i] = _spec[idx];
+                if (++idx == SpectrumSamples) idx = 0;
+            }
+        }
     }
 }
 
