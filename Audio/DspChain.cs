@@ -15,6 +15,7 @@ public sealed class DspChain
     public ParametricEq Eq { get; }
     public Compressor Compressor { get; }
     public DeEsser DeEsser { get; }
+    public Saturation Saturation { get; }
     public Limiter Limiter { get; }
     public GainStage OutputGain { get; }
 
@@ -38,12 +39,13 @@ public sealed class DspChain
         Eq = new ParametricEq(sampleRate);
         Compressor = new Compressor(sampleRate);
         DeEsser = new DeEsser(sampleRate);
+        Saturation = new Saturation();
         Limiter = new Limiter(sampleRate);
         OutputGain = new GainStage("Output Gain");
 
         _chain = new IAudioProcessor[]
         {
-            InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Limiter, OutputGain
+            InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain
         };
     }
 

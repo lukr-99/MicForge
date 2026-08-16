@@ -51,6 +51,10 @@ public sealed class Settings
     public double DeEsserThresholdDb { get; set; } = -28;
     public double DeEsserRatio { get; set; } = 4;
 
+    public bool SatEnabled { get; set; }
+    public double SatDriveDb { get; set; } = 6;
+    public double SatMix { get; set; } = 35;
+
     public bool LimiterEnabled { get; set; } = true;
     public double LimiterCeilingDb { get; set; } = -1;
     public double LimiterReleaseMs { get; set; } = 60;
@@ -91,6 +95,9 @@ public sealed class Settings
             DeEsserFreq = c.DeEsser.Frequency,
             DeEsserThresholdDb = c.DeEsser.ThresholdDb,
             DeEsserRatio = c.DeEsser.Ratio,
+            SatEnabled = c.Saturation.Enabled,
+            SatDriveDb = c.Saturation.DriveDb,
+            SatMix = c.Saturation.Mix,
             LimiterEnabled = c.Limiter.Enabled,
             LimiterCeilingDb = c.Limiter.CeilingDb,
             LimiterReleaseMs = c.Limiter.ReleaseMs,
@@ -133,6 +140,9 @@ public sealed class Settings
         c.DeEsser.Frequency = DeEsserFreq;
         c.DeEsser.ThresholdDb = DeEsserThresholdDb;
         c.DeEsser.Ratio = DeEsserRatio;
+        c.Saturation.Enabled = SatEnabled;
+        c.Saturation.DriveDb = SatDriveDb;
+        c.Saturation.Mix = SatMix;
         c.Limiter.Enabled = LimiterEnabled;
         c.Limiter.CeilingDb = LimiterCeilingDb;
         c.Limiter.ReleaseMs = LimiterReleaseMs;

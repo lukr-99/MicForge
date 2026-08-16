@@ -311,6 +311,16 @@ public sealed class MainViewModel : ViewModelBase
         de.IsDeEsser = true;
         Stages.Add(de);
 
+        var sat = new StageViewModel("Saturation", "#D9A05B", () => c.Saturation.Enabled, v => c.Saturation.Enabled = v)
+        {
+            Info = "Adds gentle harmonic warmth and character by softly saturating the signal. Great for thin or clinical mics — keep it subtle."
+        };
+        sat.Add("Drive", 0, 24, 0.5, () => c.Saturation.DriveDb, v => c.Saturation.DriveDb = v, "0.0", " dB",
+            "How hard the signal is pushed into the saturation curve. More drive = more harmonics.");
+        sat.Add("Mix", 0, 100, 1, () => c.Saturation.Mix, v => c.Saturation.Mix = v, "0", " %",
+            "Blend between the dry signal and the saturated signal.");
+        Stages.Add(sat);
+
         var lim = new StageViewModel("Limiter", "#E5543B", () => c.Limiter.Enabled, v => c.Limiter.Enabled = v)
         {
             Info = "A safety net that stops the output from ever exceeding the ceiling, preventing digital clipping and distortion on sudden peaks."
