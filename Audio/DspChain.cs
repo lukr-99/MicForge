@@ -18,6 +18,7 @@ public sealed class DspChain
     public Saturation Saturation { get; }
     public Limiter Limiter { get; }
     public GainStage OutputGain { get; }
+    public LoudnessProcessor Loudness { get; }
 
     public volatile float InputPeak;
     public volatile float OutputPeak;
@@ -42,10 +43,11 @@ public sealed class DspChain
         Saturation = new Saturation();
         Limiter = new Limiter(sampleRate);
         OutputGain = new GainStage("Output Gain");
+        Loudness = new LoudnessProcessor(sampleRate);
 
         _chain = new IAudioProcessor[]
         {
-            InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain
+            InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
         };
     }
 

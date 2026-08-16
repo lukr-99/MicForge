@@ -62,6 +62,10 @@ public sealed class Settings
 
     public double OutputGainDb { get; set; }
 
+    public bool AutoLevel { get; set; }
+    public double TargetLufs { get; set; } = -16;
+    public double MaxAutoGainDb { get; set; } = 12;
+
     // App-level (not part of the DSP chain).
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
@@ -103,7 +107,10 @@ public sealed class Settings
             LimiterCeilingDb = c.Limiter.CeilingDb,
             LimiterReleaseMs = c.Limiter.ReleaseMs,
             LimiterLookaheadMs = c.Limiter.LookaheadMs,
-            OutputGainDb = c.OutputGain.GainDb
+            OutputGainDb = c.OutputGain.GainDb,
+            AutoLevel = c.Loudness.AutoLevel,
+            TargetLufs = c.Loudness.TargetLufs,
+            MaxAutoGainDb = c.Loudness.MaxGainDb
         };
         foreach (var b in c.Eq.Bands)
             s.EqBands.Add(new EqBandSetting
@@ -150,6 +157,9 @@ public sealed class Settings
         c.Limiter.ReleaseMs = LimiterReleaseMs;
         c.Limiter.LookaheadMs = LimiterLookaheadMs;
         c.OutputGain.GainDb = OutputGainDb;
+        c.Loudness.AutoLevel = AutoLevel;
+        c.Loudness.TargetLufs = TargetLufs;
+        c.Loudness.MaxGainDb = MaxAutoGainDb;
 
         for (int i = 0; i < EqBands.Count && i < c.Eq.Bands.Count; i++)
         {

@@ -327,6 +327,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="LEVELS" FontSize="11" FontWeight="SemiBold"
@@ -357,6 +358,16 @@
                                    Foreground="{StaticResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding GrText}" FontSize="15" FontWeight="SemiBold"
                                    HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4" Margin="0,14,0,0" HorizontalAlignment="Center">
+                        <TextBlock Text="LOUDNESS" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                            <TextBlock Text="{Binding LufsText}" FontSize="15" FontWeight="SemiBold"/>
+                            <TextBlock Text=" LUFS" FontSize="10" VerticalAlignment="Bottom" Margin="2,0,0,2"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>

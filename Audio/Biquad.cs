@@ -79,6 +79,12 @@ public sealed class Biquad
         _a1 = a1 / a0; _a2 = a2 / a0;
     }
 
+    /// <summary>Set normalized coefficients directly (a0 = 1). Used for fixed BS.1770 filters.</summary>
+    public void SetRaw(double b0, double b1, double b2, double a1, double a2)
+    {
+        _b0 = b0; _b1 = b1; _b2 = b2; _a1 = a1; _a2 = a2;
+    }
+
     public float Process(float x)
     {
         double y = _b0 * x + _z1;

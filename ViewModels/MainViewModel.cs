@@ -126,6 +126,9 @@ public sealed class MainViewModel : ViewModelBase
     private string _grText = "0.0 dB";
     public string GrText { get => _grText; private set => Set(ref _grText, value); }
 
+    private string _lufsText = "—";
+    public string LufsText { get => _lufsText; private set => Set(ref _lufsText, value); }
+
     // Live stage visuals.
     private double _gateLevel, _gateThreshold;
     private bool _gateOpen;
@@ -340,6 +343,16 @@ public sealed class MainViewModel : ViewModelBase
         output.Add("Gain", -24, 24, 0.5, () => c.OutputGain.GainDb, v => c.OutputGain.GainDb = v, "0.0", " dB",
             "Overall output level in decibels.");
         Stages.Add(output);
+
+        var loud = new StageViewModel("Loudness", "#5FA8D3", () => c.Loudness.AutoLevel, v => c.Loudness.AutoLevel = v)
+        {
+            Info = "Measures perceived loudness (LUFS) and, when enabled, slowly rides the gain to keep you at a consistent target — great for streaming and podcasts. The live reading is on the meter panel."
+        };
+        loud.Add("Target", -30, -10, 0.5, () => c.Loudness.TargetLufs, v => c.Loudness.TargetLufs = v, "0.0", " LUFS",
+            "The loudness the auto-leveler aims for. Around -16 LUFS is a common streaming target.");
+        loud.Add("Max gain", 0, 18, 1, () => c.Loudness.MaxGainDb, v => c.Loudness.MaxGainDb = v, "0", " dB",
+            "How much the auto-leveler may boost or cut to reach the target.");
+        Stages.Add(loud);
     }
 
     // ---- device helpers ----
@@ -417,6 +430,9 @@ public sealed class MainViewModel : ViewModelBase
         var comp = chain.Compressor;
         GrText = $"{comp.GainReductionDb:0.0} dB";
         CompGrDb = comp.GainReductionDb;
+
+        double lufs = chain.Loudness.ShortTermLufs;
+        LufsText = lufs <= -60 ? "—" : $"{lufs:0.0}";
 
         var g = chain.Gate;
         GateThreshold = Norm(g.ThresholdDb, -80, 0);
