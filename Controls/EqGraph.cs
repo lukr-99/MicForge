@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -30,6 +32,7 @@ public sealed class EqGraph : FrameworkElement
     private static readonly Brush FillBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x24, 0x2E, 0xC4, 0xB6)));
     private static readonly Brush HandleBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen HandleStroke = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)), 1.5));
+    private static readonly Pen DisabledStroke = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x6A, 0x72, 0x7C)), 1.5));
     private static readonly Brush TagBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2A, 0x2F, 0x36)));
     private static readonly Brush TagText = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)));
 
@@ -197,9 +200,13 @@ public sealed class EqGraph : FrameworkElement
 
         for (int i = 0; i < m.Eq.Bands.Count; i++)
         {
+            var b = m.Eq.Bands[i];
             var p = HandlePoint(i, r);
             double rad = (i == _drag || i == _hover) ? 8 : 6;
-            dc.DrawEllipse(HandleBrush, HandleStroke, p, rad, rad);
+            if (b.Enabled)
+                dc.DrawEllipse(HandleBrush, HandleStroke, p, rad, rad);
+            else
+                dc.DrawEllipse(null, DisabledStroke, p, rad, rad);   // hollow when off
         }
 
         int active = _drag >= 0 ? _drag : _hover;
@@ -211,7 +218,7 @@ public sealed class EqGraph : FrameworkElement
         var b = Model.Eq.Bands[i];
         string freq = b.Freq >= 1000 ? $"{b.Freq / 1000:0.0} kHz" : $"{b.Freq:0} Hz";
         string gain = $"{b.GainDb:+0.0;-0.0;0.0} dB";
-        var ft = Text($"{freq}   {gain}", 11.5, ppd, TagText);
+        var ft = Text($"{freq}   {gain}   Q {b.Q:0.0}", 11.5, ppd, TagText);
 
         var hp = HandlePoint(i, r);
         double pad = 6;
@@ -307,13 +314,60 @@ public sealed class EqGraph : FrameworkElement
         int i = _drag >= 0 ? _drag : HitHandle(e.GetPosition(this));
         if (i < 0) return;
         var b = m.Eq.Bands[i];
-        if (b.Type == Biquad.FilterType.Peaking)
+        b.Q = Math.Clamp(b.Q * (e.Delta > 0 ? 1.12 : 0.89), 0.3, 8);
+        m.Eq.UpdateAll();
+        m.NotifyParamsChanged();
+        InvalidateVisual();
+        e.Handled = true;
+    }
+
+    protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
+    {
+        var m = Model;
+        if (m == null) return;
+        int i = HitHandle(e.GetPosition(this));
+        if (i < 0) return;
+        e.Handled = true;
+        ShowBandMenu(i);
+    }
+
+    private void ShowBandMenu(int index)
+    {
+        var m = Model;
+        var b = m.Eq.Bands[index];
+        var menu = new ContextMenu();
+
+        void AddType(string header, Biquad.FilterType type)
         {
-            b.Q = Math.Clamp(b.Q * (e.Delta > 0 ? 1.12 : 0.89), 0.3, 8);
+            var mi = new MenuItem { Header = header, IsCheckable = true, IsChecked = b.Type == type };
+            mi.Click += (_, _) =>
+            {
+                b.Type = type;
+                m.Eq.UpdateAll();
+                m.NotifyParamsChanged();
+                InvalidateVisual();
+            };
+            menu.Items.Add(mi);
+        }
+
+        AddType("Bell", Biquad.FilterType.Peaking);
+        AddType("Low shelf", Biquad.FilterType.LowShelf);
+        AddType("High shelf", Biquad.FilterType.HighShelf);
+        AddType("Notch", Biquad.FilterType.Notch);
+        menu.Items.Add(new Separator());
+
+        var en = new MenuItem { Header = "Enabled", IsCheckable = true, IsChecked = b.Enabled };
+        en.Click += (_, _) =>
+        {
+            b.Enabled = en.IsChecked;
             m.Eq.UpdateAll();
             m.NotifyParamsChanged();
             InvalidateVisual();
-            e.Handled = true;
-        }
+        };
+        menu.Items.Add(en);
+
+        menu.PlacementTarget = this;
+        menu.Placement = PlacementMode.MousePoint;
+        menu.IsOpen = true;
     }
 }
