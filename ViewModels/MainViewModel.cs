@@ -111,6 +111,22 @@ public sealed class MainViewModel : ViewModelBase
     private string _grText = "0.0 dB";
     public string GrText { get => _grText; private set => Set(ref _grText, value); }
 
+    // Live stage visuals.
+    private double _gateLevel, _gateThreshold;
+    private bool _gateOpen;
+    public double GateLevel { get => _gateLevel; private set => Set(ref _gateLevel, value); }
+    public double GateThreshold { get => _gateThreshold; private set => Set(ref _gateThreshold, value); }
+    public bool GateOpen { get => _gateOpen; private set => Set(ref _gateOpen, value); }
+
+    private double _deLevel, _deThreshold;
+    private bool _deActive;
+    public double DeEsserLevel { get => _deLevel; private set => Set(ref _deLevel, value); }
+    public double DeEsserThreshold { get => _deThreshold; private set => Set(ref _deThreshold, value); }
+    public bool DeEsserActive { get => _deActive; private set => Set(ref _deActive, value); }
+
+    private double _compGrDb;
+    public double CompGrDb { get => _compGrDb; private set => Set(ref _compGrDb, value); }
+
     // ---- options ----
     private bool _startWithWindows;
     public bool StartWithWindows
@@ -179,9 +195,10 @@ public sealed class MainViewModel : ViewModelBase
             "How gradually the gate closes after the hold time. Longer sounds more natural.");
         gate.Add("Range", -90, 0, 2, () => c.Gate.RangeDb, v => c.Gate.RangeDb = v, "0", " dB",
             "How much the signal is attenuated while the gate is closed. More negative = more complete silence.");
+        gate.IsGate = true;
         Stages.Add(gate);
 
-        var eq = new EqStageViewModel(c.Eq, AudioEngine.SampleRate, "#2EC4B6",
+        var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
             () => c.Eq.Enabled, v => c.Eq.Enabled = v)
         {
             Info = "Shapes tone by boosting or cutting frequency bands: add warmth or presence, cut boxiness, tame harshness. In Graph view, drag the dots (mouse-wheel changes the width of a bell band)."
@@ -233,6 +250,7 @@ public sealed class MainViewModel : ViewModelBase
             "How loud sibilance must get before it's reduced.");
         de.Add("Ratio", 1, 10, 0.5, () => c.DeEsser.Ratio, v => c.DeEsser.Ratio = v, "0.0", ":1",
             "How hard the sibilant band is reduced.");
+        de.IsDeEsser = true;
         Stages.Add(de);
 
         var lim = new StageViewModel("Limiter", "#E5543B", () => c.Limiter.Enabled, v => c.Limiter.Enabled = v)
@@ -304,11 +322,25 @@ public sealed class MainViewModel : ViewModelBase
 
     private void UpdateMeters()
     {
-        float ip = _engine.Chain.InputPeak;
+        var chain = _engine.Chain;
+        float ip = chain.InputPeak;
         InLevel = ToMeter(ip);
-        OutLevel = ToMeter(_engine.Chain.OutputPeak);
+        OutLevel = ToMeter(chain.OutputPeak);
         CompLevelDb = ip <= 0.00001f ? -100 : 20 * Math.Log10(ip);
-        GrText = $"{_engine.Chain.Compressor.GainReductionDb:0.0} dB";
+
+        var comp = chain.Compressor;
+        GrText = $"{comp.GainReductionDb:0.0} dB";
+        CompGrDb = comp.GainReductionDb;
+
+        var g = chain.Gate;
+        GateThreshold = Norm(g.ThresholdDb, -80, 0);
+        GateLevel = Norm(g.DetectorDb, -80, 0);
+        GateOpen = g.Enabled && g.DetectorDb >= g.ThresholdDb;
+
+        var d = chain.DeEsser;
+        DeEsserThreshold = Norm(d.ThresholdDb, -60, 0);
+        DeEsserLevel = Norm(d.DetectorDb, -60, 0);
+        DeEsserActive = d.Enabled && d.ReductionDb < -0.3;
     }
 
     private static double ToMeter(float peak)
@@ -317,6 +349,9 @@ public sealed class MainViewModel : ViewModelBase
         double db = 20 * Math.Log10(peak);
         return Math.Clamp((db + 60) / 60.0, 0, 1);
     }
+
+    private static double Norm(double db, double min, double max)
+        => Math.Clamp((db - min) / (max - min), 0, 1);
 
     // ---- presets / persistence ----
     private Settings Snapshot()

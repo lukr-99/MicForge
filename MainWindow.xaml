@@ -58,8 +58,8 @@
                                Foreground="{StaticResource TextMutedBrush}"
                                Visibility="{Binding Note, Converter={StaticResource EmptyToCollapsed}}"/>
 
-                    <!-- EQ graph (Graph view) -->
-                    <ctrl:EqGraph Height="200" Margin="0,10,0,0" Model="{Binding}">
+                    <!-- EQ graph + spectrum (Graph view) -->
+                    <ctrl:EqGraph Height="210" Margin="0,10,0,0" Model="{Binding}">
                         <ctrl:EqGraph.Visibility>
                             <MultiBinding Converter="{StaticResource AllTrueVis}">
                                 <Binding Path="IsEq"/>
@@ -68,16 +68,51 @@
                         </ctrl:EqGraph.Visibility>
                     </ctrl:EqGraph>
 
-                    <!-- Compressor transfer curve (Graph view) -->
-                    <ctrl:CompCurve Height="150" Margin="0,10,0,0" Model="{Binding}"
-                                    LevelDb="{Binding DataContext.CompLevelDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
-                        <ctrl:CompCurve.Visibility>
+                    <!-- Compressor visuals (Graph view) -->
+                    <StackPanel Margin="0,10,0,0">
+                        <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource AllTrueVis}">
                                 <Binding Path="IsCompressor"/>
                                 <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                             </MultiBinding>
-                        </ctrl:CompCurve.Visibility>
-                    </ctrl:CompCurve>
+                        </StackPanel.Visibility>
+                        <TextBlock Text="Transfer curve" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <ctrl:CompCurve Height="140" Model="{Binding}"
+                                        LevelDb="{Binding DataContext.CompLevelDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,10,0,4"/>
+                        <ctrl:GrHistory Height="46"
+                                        Gr="{Binding DataContext.CompGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                    </StackPanel>
+
+                    <!-- Gate visual (Graph view) -->
+                    <StackPanel Margin="0,10,0,0">
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueVis}">
+                                <Binding Path="IsGate"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                        <TextBlock Text="Level vs open threshold" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <ctrl:ThresholdMeter Height="18"
+                                             Level="{Binding DataContext.GateLevel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             Threshold="{Binding DataContext.GateThreshold, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             Active="{Binding DataContext.GateOpen, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                    </StackPanel>
+
+                    <!-- De-esser visual (Graph view) -->
+                    <StackPanel Margin="0,10,0,0">
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueVis}">
+                                <Binding Path="IsDeEsser"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                        <TextBlock Text="Sibilance vs threshold" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <ctrl:ThresholdMeter Height="18"
+                                             Level="{Binding DataContext.DeEsserLevel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             Threshold="{Binding DataContext.DeEsserThreshold, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             Active="{Binding DataContext.DeEsserActive, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                    </StackPanel>
 
                     <!-- sliders (hidden for EQ in Graph view) -->
                     <ItemsControl ItemsSource="{Binding Params}" Margin="0,4,0,0">

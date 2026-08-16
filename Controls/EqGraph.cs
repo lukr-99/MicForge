@@ -3,35 +3,44 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using MicForge.Audio;
 using MicForge.ViewModels;
 
 namespace MicForge.Controls;
 
 /// <summary>
-/// Interactive equalizer curve. Draws the combined frequency response of all bands.
-/// Each handle sits ON the resulting curve at its band's frequency; dragging moves the
-/// curve to the cursor (X = frequency, Y = gain), mouse-wheel changes Q on bell bands.
-/// A live readout shows the band's exact frequency and gain.
+/// Interactive equalizer curve with a live spectrum analyzer behind it. Each handle sits
+/// ON the combined response curve; dragging moves the curve to the cursor (X = frequency,
+/// Y = gain), mouse-wheel changes Q on bell bands. A readout shows exact frequency/gain.
 /// </summary>
 public sealed class EqGraph : FrameworkElement
 {
     private const double FMin = 20, FMax = 20000, GMax = 18;
     private const double PadL = 34, PadR = 12, PadT = 12, PadB = 20;
+    private const int N = 1024;   // FFT size
 
     private static readonly Brush BgBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x18, 0x1B, 0x20)));
     private static readonly Pen GridPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x2A, 0x30, 0x38)), 1));
     private static readonly Pen ZeroPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x44, 0x4C, 0x56)), 1));
     private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xAA, 0xB1, 0xB9)));
+    private static readonly Brush SpecBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x4A, 0x6E, 0x84, 0x99)));
     private static readonly Brush CurveBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen CurvePen = Freeze(new Pen(CurveBrush, 2));
-    private static readonly Brush FillBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0x2E, 0xC4, 0xB6)));
+    private static readonly Brush FillBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x24, 0x2E, 0xC4, 0xB6)));
     private static readonly Brush HandleBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen HandleStroke = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)), 1.5));
     private static readonly Brush TagBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2A, 0x2F, 0x36)));
     private static readonly Brush TagText = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)));
 
     private static T Freeze<T>(T f) where T : Freezable { f.Freeze(); return f; }
+
+    private readonly float[] _samples = new float[N];
+    private readonly float[] _re = new float[N];
+    private readonly float[] _im = new float[N];
+    private readonly float[] _win = new float[N];
+    private readonly double[] _spec = new double[N / 2];   // smoothed 0..1 magnitudes
+    private readonly DispatcherTimer _anim = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
     private int _drag = -1;
     private int _hover = -1;
@@ -40,6 +49,13 @@ public sealed class EqGraph : FrameworkElement
     {
         MinHeight = 200;
         Focusable = false;
+        for (int i = 0; i < N; i++)
+            _win[i] = (float)(0.5 - 0.5 * Math.Cos(2 * Math.PI * i / (N - 1)));   // Hann
+
+        _anim.Tick += (_, _) => { if (IsVisible) InvalidateVisual(); };
+        Loaded += (_, _) => { if (IsVisible) _anim.Start(); };
+        Unloaded += (_, _) => _anim.Stop();
+        IsVisibleChanged += (_, _) => { if (IsVisible) _anim.Start(); else _anim.Stop(); };
     }
 
     public static readonly DependencyProperty ModelProperty = DependencyProperty.Register(
@@ -79,6 +95,21 @@ public sealed class EqGraph : FrameworkElement
         return new Point(XOf(f, r), YOf(Math.Clamp(CombinedDb(f), -GMax, GMax), r));
     }
 
+    private void UpdateSpectrum()
+    {
+        Model.Chain.CopySpectrum(_samples);
+        for (int i = 0; i < N; i++) { _re[i] = _samples[i] * _win[i]; _im[i] = 0; }
+        Fft.Forward(_re, _im);
+        int bins = N / 2;
+        for (int k = 0; k < bins; k++)
+        {
+            double mag = Math.Sqrt(_re[k] * _re[k] + _im[k] * _im[k]) / (N / 2);
+            double dbfs = 20 * Math.Log10(mag + 1e-9);
+            double norm = Math.Clamp((dbfs + 80) / 70.0, 0, 1);
+            _spec[k] = Math.Max(norm, _spec[k] * 0.88);   // fast rise, slow fall
+        }
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
@@ -89,6 +120,33 @@ public sealed class EqGraph : FrameworkElement
         var r = Plot;
         double ppd = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
+        // Live spectrum behind everything.
+        if (m.Chain != null)
+        {
+            UpdateSpectrum();
+            int bins = N / 2;
+            double sr = m.SampleRate;
+            var geo = new StreamGeometry();
+            using (var g = geo.Open())
+            {
+                g.BeginFigure(new Point(r.Left, r.Bottom), true, true);
+                for (double x = r.Left; x <= r.Right; x += 2)
+                {
+                    double kf = FOf(x, r) * N / sr;
+                    int k0 = (int)kf;
+                    if (k0 > bins - 2) k0 = bins - 2;
+                    if (k0 < 0) k0 = 0;
+                    double frac = kf - k0;
+                    double val = _spec[k0] * (1 - frac) + _spec[k0 + 1] * frac;
+                    g.LineTo(new Point(x, r.Bottom - val * r.Height), true, false);
+                }
+                g.LineTo(new Point(r.Right, r.Bottom), true, false);
+            }
+            geo.Freeze();
+            dc.DrawGeometry(SpecBrush, null, geo);
+        }
+
+        // Grids + labels.
         (double f, string label)[] fLines =
         {
             (30, "30"), (100, "100"), (300, "300"), (1000, "1k"), (3000, "3k"), (10000, "10k")
@@ -108,7 +166,7 @@ public sealed class EqGraph : FrameworkElement
             dc.DrawText(ft, new Point(r.Left - ft.Width - 5, y - ft.Height / 2));
         }
 
-        // Combined response curve, with a soft fill down to the 0 dB line.
+        // Combined response curve with a soft fill.
         var curve = new StreamGeometry();
         var area = new StreamGeometry();
         double y0 = YOf(0, r);
@@ -137,7 +195,6 @@ public sealed class EqGraph : FrameworkElement
         dc.DrawGeometry(FillBrush, null, area);
         dc.DrawGeometry(null, CurvePen, curve);
 
-        // Handles (sitting on the curve).
         for (int i = 0; i < m.Eq.Bands.Count; i++)
         {
             var p = HandlePoint(i, r);
@@ -145,7 +202,6 @@ public sealed class EqGraph : FrameworkElement
             dc.DrawEllipse(HandleBrush, HandleStroke, p, rad, rad);
         }
 
-        // Live readout for the active handle.
         int active = _drag >= 0 ? _drag : _hover;
         if (active >= 0) DrawReadout(dc, active, r, ppd);
     }
@@ -212,7 +268,6 @@ public sealed class EqGraph : FrameworkElement
             b.Freq = Math.Clamp(FOf(p.X, r), m.FreqMin[_drag], m.FreqMax[_drag]);
             m.Eq.UpdateAll();
 
-            // Move the combined curve at this frequency toward the cursor by adjusting the band gain.
             double target = Math.Clamp(GOf(p.Y, r), -GMax, GMax);
             double current = CombinedDb(b.Freq);
             b.GainDb = Math.Clamp(b.GainDb + (target - current), -GMax, GMax);

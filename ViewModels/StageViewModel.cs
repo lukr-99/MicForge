@@ -29,6 +29,8 @@ public class StageViewModel : ViewModelBase
     // Which specialised visual (if any) this stage offers in Graph view.
     public virtual bool IsEq => false;
     public virtual bool IsCompressor => false;
+    public bool IsGate { get; set; }
+    public bool IsDeEsser { get; set; }
 
     public ObservableCollection<ParamViewModel> Params { get; } = new();
 
