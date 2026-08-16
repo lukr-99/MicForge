@@ -1,0 +1,370 @@
+<Window x:Class="MicForge.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:MicForge.Controls"
+        Title="MicForge" Height="820" Width="1200"
+        MinHeight="620" MinWidth="960"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBrush}"
+        FontFamily="Segoe UI" TextOptions.TextFormattingMode="Ideal">
+
+    <Window.Resources>
+        <!-- One template for every stage; the specialised visuals switch on IsEq / IsCompressor + VisualMode. -->
+        <DataTemplate x:Key="StageTemplate">
+            <Border Style="{StaticResource Card}" Width="302" Margin="0,0,12,12" Padding="16,14">
+                <StackPanel>
+                    <!-- header -->
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,9,0"
+                                    Background="{Binding Accent, Converter={StaticResource HexToBrush}}"/>
+                            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <ToggleButton x:Name="InfoBtn" Style="{StaticResource InfoToggle}" Margin="0,0,10,0"
+                                          ToolTip="What does this do?"/>
+                            <CheckBox Style="{StaticResource ToggleSwitch}"
+                                      IsChecked="{Binding Enabled}" IsEnabled="{Binding ToggleEnabled}"
+                                      Visibility="{Binding CanToggle, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                        <Popup PlacementTarget="{Binding ElementName=InfoBtn}" Placement="Bottom"
+                               StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+                               HorizontalOffset="-250" VerticalOffset="4"
+                               IsOpen="{Binding IsChecked, ElementName=InfoBtn}">
+                            <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                                    Padding="14" MaxWidth="300">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{Binding Info}" TextWrapping="Wrap" FontSize="12"
+                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                    <ItemsControl ItemsSource="{Binding Params}" Margin="0,6,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,6,0,0"
+                                                            Visibility="{Binding Help, Converter={StaticResource EmptyToCollapsed}}">
+                                                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12"/>
+                                                    <TextBlock Text="{Binding Help}" TextWrapping="Wrap" FontSize="11"
+                                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <TextBlock Text="{Binding Note}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Visibility="{Binding Note, Converter={StaticResource EmptyToCollapsed}}"/>
+
+                    <!-- EQ graph (Graph view) -->
+                    <ctrl:EqGraph Height="200" Margin="0,10,0,0" Model="{Binding}">
+                        <ctrl:EqGraph.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueVis}">
+                                <Binding Path="IsEq"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </ctrl:EqGraph.Visibility>
+                    </ctrl:EqGraph>
+
+                    <!-- Compressor transfer curve (Graph view) -->
+                    <ctrl:CompCurve Height="150" Margin="0,10,0,0" Model="{Binding}"
+                                    LevelDb="{Binding DataContext.CompLevelDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                        <ctrl:CompCurve.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueVis}">
+                                <Binding Path="IsCompressor"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </ctrl:CompCurve.Visibility>
+                    </ctrl:CompCurve>
+
+                    <!-- sliders (hidden for EQ in Graph view) -->
+                    <ItemsControl ItemsSource="{Binding Params}" Margin="0,4,0,0">
+                        <ItemsControl.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueCollapsed}">
+                                <Binding Path="IsEq"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </ItemsControl.Visibility>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0">
+                                        <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding Display}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <Slider Grid.Row="1" Style="{StaticResource Fader}" Margin="0,3,0,0"
+                                            Minimum="{Binding Min}" Maximum="{Binding Max}"
+                                            Value="{Binding Value, Mode=TwoWay}"
+                                            TickFrequency="{Binding Step}" IsSnapToTickEnabled="True"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="64"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= NAV RAIL ================= -->
+        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+            <StackPanel>
+                <Border Width="32" Height="32" CornerRadius="8" Margin="0,16,0,20" HorizontalAlignment="Center"
+                        Background="{StaticResource AccentBrush}">
+                    <TextBlock Text="M" FontWeight="Bold" FontSize="18" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <Button Style="{StaticResource NavButton}" ToolTip="Processor"
+                        Command="{Binding ShowProcessorCommand}" Tag="{Binding IsProcessorPage}">
+                    <Viewbox Width="22" Height="22">
+                        <Path Stretch="Uniform"
+                              Data="M3,17v2h6v-2H3z M3,5v2h10V5H3z M13,21v-2h8v-2h-8v-2h-2v6H13z M7,9v2H3v2h4v2h2V9H7z M21,13v-2H11v2H21z M15,7h2V5h4V3h-4V1h-2V7z"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                    </Viewbox>
+                </Button>
+                <Button Style="{StaticResource NavButton}" ToolTip="Settings"
+                        Command="{Binding ShowSettingsCommand}" Tag="{Binding IsSettingsPage}">
+                    <Viewbox Width="22" Height="22">
+                        <Path Stretch="Uniform"
+                              Data="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                    </Viewbox>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= PROCESSOR PAGE ================= -->
+        <Grid Grid.Column="1" Margin="14" Visibility="{Binding IsProcessorPage, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="160"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" Margin="0,0,12,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top bar -->
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="18,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="MicForge" FontSize="22" FontWeight="Bold"/>
+                            <TextBlock Text="microphone processor" FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <StackPanel Margin="0,0,14,0">
+                                <TextBlock Text="Input — microphone" FontSize="12" Margin="2,0,0,4"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <ComboBox Width="250" ItemsSource="{Binding Inputs}"
+                                          SelectedItem="{Binding SelectedInput}"
+                                          DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Output — virtual mic (CABLE Input)" FontSize="12" Margin="2,0,0,4"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <ComboBox Width="250" ItemsSource="{Binding Outputs}"
+                                          SelectedItem="{Binding SelectedOutput}"
+                                          DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
+                            </StackPanel>
+                            <Button Content="⟳" FontSize="17" Width="40" Height="36" Padding="0"
+                                    VerticalAlignment="Bottom"
+                                    Command="{Binding RefreshCommand}" ToolTip="Refresh device list"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <Ellipse Width="9" Height="9" Margin="0,0,7,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource TextMutedBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource StartBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}" MinWidth="130">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource StopBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Chain header: view switch + presets -->
+                <Grid Grid.Row="1" Margin="2,14,2,4">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Processing chain" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                            <TextBlock Text="Sliders" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" Margin="8,0" IsChecked="{Binding VisualMode}"/>
+                            <TextBlock Text="Graphs" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Save preset" Command="{Binding SavePresetCommand}" Margin="0,0,8,0"/>
+                        <Button Content="Load preset" Command="{Binding LoadPresetCommand}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Stage cards -->
+                <ScrollViewer Grid.Row="2" Margin="0,6,0,0"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Stages}" ItemTemplate="{StaticResource StageTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Meters -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="LEVELS" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+
+                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ctrl:LevelMeter Grid.Column="0" Level="{Binding InLevel}" Width="30" HorizontalAlignment="Center"/>
+                        <ctrl:LevelMeter Grid.Column="1" Level="{Binding OutLevel}" Width="30" HorizontalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="IN" HorizontalAlignment="Center" FontSize="11"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Grid.Column="1" Text="OUT" HorizontalAlignment="Center" FontSize="11"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                    </Grid>
+
+                    <StackPanel Grid.Row="3" Margin="0,16,0,0" HorizontalAlignment="Center">
+                        <TextBlock Text="COMP GR" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding GrText}" FontSize="15" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================= SETTINGS PAGE ================= -->
+        <ScrollViewer Grid.Column="1" Margin="14" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsSettingsPage, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Left" MaxWidth="640">
+                <TextBlock Text="Settings" FontSize="22" FontWeight="Bold" Margin="2,0,0,14"/>
+
+                <Border Style="{StaticResource Card}" Padding="18,16">
+                    <StackPanel>
+                        <TextBlock Text="Startup &amp; tray" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Start with Windows"/>
+                                <TextBlock Text="Launch MicForge when you sign in (starts hidden in the tray)."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding StartWithWindows}"/>
+                        </Grid>
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Auto-start processing"/>
+                                <TextBlock Text="Begin processing automatically as soon as the app opens."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding AutoStartProcessing}"/>
+                        </Grid>
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Close to tray"/>
+                                <TextBlock Text="Closing or minimizing keeps MicForge running in the system tray."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding MinimizeToTray}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="About" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                   Text="A real-time microphone processor. Route the output to a virtual audio cable and select it as your mic in any app."/>
+                        <TextBlock Text="{Binding VersionText}" FontSize="11" Margin="0,10,0,0"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="More settings coming soon." FontSize="11" Margin="4,12,0,0"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
