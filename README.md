@@ -4,8 +4,13 @@ A real-time microphone DSP processor for Windows. It captures your mic, runs a f
 processing chain, and outputs to a virtual audio device so **any** app (Discord, OBS,
 games, browser) can use the cleaned-up, shaped signal as its "microphone".
 
-Written in C# / .NET 10 / WinForms using [NAudio](https://github.com/naudio/NAudio)
-for WASAPI capture and render. The DSP is hand-written (no VST dependency).
+Written in C# / .NET 10 / WPF using [NAudio](https://github.com/naudio/NAudio)
+for WASAPI capture and render. The DSP is hand-written (no VST dependency), and the
+dark UI is a hand-rolled theme (no control-library dependency).
+
+Features: dark theme, per-stage on/off toggles + faders with live readouts, In/Out
+level meters + compressor gain-reduction readout, JSON preset save/load, minimize/
+close to the system tray, and an optional "Start with Windows" entry.
 
 ## Signal chain
 
