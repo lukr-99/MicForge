@@ -17,4 +17,11 @@
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
 
+  <!-- Bundle the RNNoise library (built from the official xiph source) next to the exe. -->
+  <ItemGroup>
+    <None Include="native\rnnoise.dll" Link="rnnoise.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -41,18 +41,25 @@ launch; you can also Save/Load named presets (`.json`).
 To monitor yourself while tuning, set Output to your headphones instead of the cable
 (expect a bit of latency — that's normal for the two-device WASAPI path).
 
-## Optional: RNNoise AI noise suppression
+## RNNoise AI noise suppression
 
-The Noise Suppression stage is disabled and greyed out until a `rnnoise.dll` is placed
-next to `MicForge.exe`. Use a 64-bit build of [RNNoise](https://github.com/xiph/rnnoise)
-(or a prebuilt `librnnoise`/`rnnoise.dll`). Once present, the stage enables itself.
+A 64-bit `rnnoise.dll` — built from the official [xiph/rnnoise](https://github.com/xiph/rnnoise)
+source — is bundled in [`native/`](native/) and copied next to the exe on build, so the
+Noise Suppression stage works out of the box. See [`native/RNNOISE-LICENSE.txt`](native/RNNOISE-LICENSE.txt)
+(BSD) for its license. You can also point the app at a different `rnnoise.dll` via the
+card's **Load…** button; the loader validates the exports before enabling the stage.
+
+To rebuild the DLL: clone the repo, run `download_model.sh` to fetch the pretrained model,
+then compile the scalar sources (`denoise, rnn, pitch, kiss_fft, celt_lpc, nnet,
+nnet_default, parse_lpcnet_weights, rnnoise_data, rnnoise_tables`) into a DLL with
+`RNNOISE_BUILD` + `DLL_EXPORT` defined.
 
 ## Notes / roadmap
 
 - Capture and render run on two independent device clocks; a 500 ms input buffer plus
   overflow discard absorbs the drift. Fine for voice; not sample-accurate.
-- Ideas: spectrum/gain-reduction visualisation, per-band EQ type selection in the UI,
-  A/B bypass, VST3 hosting, exclusive-mode low-latency path.
+- Ideas: per-band EQ type selection in the UI, A/B bypass, VST3 hosting,
+  exclusive-mode low-latency path.
 
 ## License
 
