@@ -26,6 +26,7 @@ public sealed class Settings
     public double HighPassFreq { get; set; } = 80;
 
     public bool SuppressorEnabled { get; set; }
+    public string RnnoisePath { get; set; }
 
     public bool GateEnabled { get; set; } = true;
     public double GateThresholdDb { get; set; } = -45;
@@ -69,6 +70,7 @@ public sealed class Settings
             HighPassEnabled = c.HighPass.Enabled,
             HighPassFreq = c.HighPass.Frequency,
             SuppressorEnabled = c.Suppressor.Enabled,
+            RnnoisePath = c.Suppressor.LoadedPath,
             GateEnabled = c.Gate.Enabled,
             GateThresholdDb = c.Gate.ThresholdDb,
             GateAttackMs = c.Gate.AttackMs,
@@ -109,6 +111,7 @@ public sealed class Settings
         c.InputGain.GainDb = InputGainDb;
         c.HighPass.Enabled = HighPassEnabled;
         c.HighPass.Frequency = HighPassFreq;
+        if (!string.IsNullOrEmpty(RnnoisePath)) c.Suppressor.TryLoad(RnnoisePath);
         c.Suppressor.Enabled = SuppressorEnabled && c.Suppressor.Available;
         c.Gate.Enabled = GateEnabled;
         c.Gate.ThresholdDb = GateThresholdDb;

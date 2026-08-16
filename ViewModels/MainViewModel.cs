@@ -177,7 +177,13 @@ public sealed class MainViewModel : ViewModelBase
         if (!c.Suppressor.Available)
         {
             ns.ToggleEnabled = false;
-            ns.Note = "Drop rnnoise.dll next to MicForge.exe to enable AI noise suppression.";
+            ns.Note = "Needs a 64-bit rnnoise.dll. Load one you downloaded or built, or drop it next to MicForge.exe.";
+            ns.ShowLoadButton = true;
+            ns.LoadCommand = new RelayCommand(BrowseRnnoise);
+        }
+        else
+        {
+            ns.Note = "AI noise suppression is active (rnnoise.dll loaded).";
         }
         Stages.Add(ns);
 
@@ -375,6 +381,30 @@ public sealed class MainViewModel : ViewModelBase
         _meterTimer?.Stop();
         SaveSettings();
         _engine.Dispose();
+    }
+
+    private void BrowseRnnoise()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select rnnoise.dll (64-bit)",
+            Filter = "rnnoise library (*.dll)|*.dll"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        if (_engine.Chain.Suppressor.TryLoad(dlg.FileName))
+        {
+            _engine.Chain.Suppressor.Enabled = true;
+            SaveSettings();
+            BuildStages();   // refresh the Noise Suppression card
+        }
+        else
+        {
+            MessageBox.Show(
+                "That file isn't a compatible RNNoise library.\n\nIt must be a 64-bit rnnoise.dll exporting " +
+                "rnnoise_create, rnnoise_destroy and rnnoise_process_frame.",
+                "MicForge");
+        }
     }
 
     private void SavePresetDialog()

@@ -4,19 +4,29 @@ using System.Runtime.InteropServices;
 namespace MicForge.Audio;
 
 /// <summary>
-/// AI noise suppression via RNNoise. Optional: if rnnoise.dll isn't next to the exe,
-/// <see cref="Available"/> is false and this stage is a transparent pass-through.
+/// AI noise suppression via RNNoise, loaded dynamically at runtime. Point it at a
+/// 64-bit rnnoise.dll (exporting rnnoise_create / rnnoise_destroy / rnnoise_process_frame)
+/// or drop one next to the exe. If none is loaded, <see cref="Available"/> is false and
+/// this stage is a transparent pass-through.
 ///
-/// RNNoise works on 480-sample frames at 48 kHz mono, with samples scaled to the
-/// int16 range. We keep the stream continuous with a small output FIFO primed with
-/// one frame of silence (adds ~10 ms latency only while enabled).
+/// RNNoise works on 480-sample frames at 48 kHz mono, scaled to the int16 range. A small
+/// output FIFO primed with one frame of silence keeps the stream continuous (~10 ms).
 /// </summary>
 public sealed class NoiseSuppressor : IAudioProcessor
 {
     private const int Frame = 480;
     private const float Scale = 32768f;
 
-    private readonly IntPtr _state;
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr CreateDel(IntPtr model);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void DestroyDel(IntPtr state);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate float ProcessDel(IntPtr state, float[] output, float[] input);
+
+    private IntPtr _lib;
+    private IntPtr _state;
+    private CreateDel _create;
+    private DestroyDel _destroy;
+    private ProcessDel _process;
+
     private readonly float[] _in = new float[Frame];
     private readonly float[] _out = new float[Frame];
     private int _fill;
@@ -26,21 +36,52 @@ public sealed class NoiseSuppressor : IAudioProcessor
 
     public NoiseSuppressor()
     {
-        try
-        {
-            _state = rnnoise_create(IntPtr.Zero);
-            Available = _state != IntPtr.Zero;
-        }
-        catch (DllNotFoundException) { Available = false; }
-        catch (BadImageFormatException) { Available = false; } // wrong bitness
-
-        if (!Available) Enabled = false;
+        TryLoad("rnnoise");   // rnnoise.dll next to the exe / on PATH
         Prime();
     }
 
     public string Name => "Noise Suppression (RNNoise)";
-    public bool Available { get; }
+    public bool Available { get; private set; }
     public bool Enabled { get; set; }
+    public string LoadedPath { get; private set; }
+
+    /// <summary>Load an rnnoise library from a name ("rnnoise") or a full .dll path.</summary>
+    public bool TryLoad(string path)
+    {
+        Unload();
+        if (string.IsNullOrWhiteSpace(path)) { Available = false; return false; }
+
+        try
+        {
+            if (!NativeLibrary.TryLoad(path, out _lib)) { Available = false; Enabled = false; return false; }
+            _create = Marshal.GetDelegateForFunctionPointer<CreateDel>(NativeLibrary.GetExport(_lib, "rnnoise_create"));
+            _destroy = Marshal.GetDelegateForFunctionPointer<DestroyDel>(NativeLibrary.GetExport(_lib, "rnnoise_destroy"));
+            _process = Marshal.GetDelegateForFunctionPointer<ProcessDel>(NativeLibrary.GetExport(_lib, "rnnoise_process_frame"));
+            _state = _create(IntPtr.Zero);
+            Available = _state != IntPtr.Zero;
+            LoadedPath = Available ? path : null;
+            if (!Available) Enabled = false;
+            Prime();
+            return Available;
+        }
+        catch
+        {
+            Unload();
+            Available = false;
+            Enabled = false;
+            return false;
+        }
+    }
+
+    private void Unload()
+    {
+        try { if (_state != IntPtr.Zero && _destroy != null) _destroy(_state); } catch { }
+        _state = IntPtr.Zero;
+        try { if (_lib != IntPtr.Zero) NativeLibrary.Free(_lib); } catch { }
+        _lib = IntPtr.Zero;
+        _create = null; _destroy = null; _process = null;
+        LoadedPath = null;
+    }
 
     private void Prime()
     {
@@ -57,7 +98,7 @@ public sealed class NoiseSuppressor : IAudioProcessor
             _in[_fill++] = buffer[i] * Scale;
             if (_fill == Frame)
             {
-                rnnoise_process_frame(_state, _out, _in);
+                _process(_state, _out, _in);
                 for (int j = 0; j < Frame; j++)
                 {
                     _fifo[_write] = _out[j] / Scale;
@@ -73,7 +114,6 @@ public sealed class NoiseSuppressor : IAudioProcessor
                 _read = (_read + 1) % _fifo.Length;
                 _fifoCount--;
             }
-            // else: leave sample as-is (only happens on the very first frame)
         }
     }
 
@@ -81,13 +121,4 @@ public sealed class NoiseSuppressor : IAudioProcessor
     {
         if (Available) Prime();
     }
-
-    [DllImport("rnnoise", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr rnnoise_create(IntPtr model);
-
-    [DllImport("rnnoise", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void rnnoise_destroy(IntPtr state);
-
-    [DllImport("rnnoise", CallingConvention = CallingConvention.Cdecl)]
-    private static extern float rnnoise_process_frame(IntPtr state, float[] output, float[] input);
 }
