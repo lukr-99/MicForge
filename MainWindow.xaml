@@ -186,20 +186,13 @@
 
         <!-- ================= PROCESSOR PAGE ================= -->
         <Grid Grid.Column="1" Margin="14" Visibility="{Binding IsProcessorPage, Converter={StaticResource BoolToVis}}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="160"/>
-            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <Grid Grid.Column="0" Margin="0,0,12,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Top bar -->
-                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="18,14">
+            <!-- Top bar (full-width header) -->
+            <Border Grid.Row="0" Style="{StaticResource Card}" Padding="20,14" Margin="0,0,0,12">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -216,41 +209,45 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                                     VerticalAlignment="Center">
                             <StackPanel Margin="0,0,14,0">
-                                <TextBlock Text="Input — microphone" FontSize="12" Margin="2,0,0,4"
-                                           Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="Input" FontSize="12" FontWeight="SemiBold" Margin="2,0,0,5"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
                                 <ComboBox Width="250" ItemsSource="{Binding Inputs}"
                                           SelectedItem="{Binding SelectedInput}"
                                           DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
                             </StackPanel>
-                            <StackPanel Margin="0,0,10,0">
-                                <TextBlock Text="Output — virtual mic (CABLE Input)" FontSize="12" Margin="2,0,0,4"
-                                           Foreground="{StaticResource TextBrush}"/>
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock Text="Output → virtual mic" FontSize="12" FontWeight="SemiBold" Margin="2,0,0,5"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
                                 <ComboBox Width="250" ItemsSource="{Binding Outputs}"
                                           SelectedItem="{Binding SelectedOutput}"
                                           DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
                             </StackPanel>
-                            <Button Content="⟳" FontSize="17" Width="40" Height="36" Padding="0"
-                                    VerticalAlignment="Bottom"
+                            <Button Style="{StaticResource IconButton}" Content="⟳" FontSize="18"
+                                    Width="36" Height="36" VerticalAlignment="Bottom"
                                     Command="{Binding RefreshCommand}" ToolTip="Refresh device list"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                                <Ellipse Width="9" Height="9" Margin="0,0,7,0">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="{StaticResource TextMutedBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                    <Setter Property="Fill" Value="{StaticResource StartBrush}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}" MinWidth="130">
+                            <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13"
+                                    Padding="12,6" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="9" Height="9" Margin="0,0,7,0">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="{StaticResource TextMutedBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                        <Setter Property="Fill" Value="{StaticResource StartBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
+                                    MinWidth="128" Height="40">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
                                         <Style.Triggers>
@@ -263,10 +260,23 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-                </Border>
+            </Border>
 
-                <!-- Chain header: view switch + presets -->
-                <Grid Grid.Row="1" Margin="2,14,2,4">
+            <!-- Content: chain (left) + meters (right) -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="160"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0" Margin="0,0,12,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Chain header: view switch + presets -->
+                    <Grid Grid.Row="0" Margin="2,0,2,4">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Processing chain" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
@@ -282,7 +292,7 @@
                 </Grid>
 
                 <!-- Stage cards -->
-                <ScrollViewer Grid.Row="2" Margin="0,6,0,0"
+                <ScrollViewer Grid.Row="1" Margin="0,6,0,0"
                               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding Stages}" ItemTemplate="{StaticResource StageTemplate}">
                         <ItemsControl.ItemsPanel>
@@ -335,6 +345,7 @@
                     </StackPanel>
                 </Grid>
             </Border>
+            </Grid>
         </Grid>
 
         <!-- ================= SETTINGS PAGE ================= -->
