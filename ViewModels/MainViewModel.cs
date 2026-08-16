@@ -329,6 +329,8 @@ public sealed class MainViewModel : ViewModelBase
             "The maximum output level. Nothing gets past this.");
         lim.Add("Release", 10, 500, 5, () => c.Limiter.ReleaseMs, v => c.Limiter.ReleaseMs = v, "0", " ms",
             "How quickly the limiter recovers after catching a peak.");
+        lim.Add("Lookahead", 0.5, 10, 0.5, () => c.Limiter.LookaheadMs, v => c.Limiter.LookaheadMs = v, "0.0", " ms",
+            "How far ahead the limiter looks so it can ramp down before a peak (adds this much latency).");
         Stages.Add(lim);
 
         var output = new StageViewModel("Output", "#6C7A89", () => true, _ => { }, canToggle: false)

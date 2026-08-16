@@ -58,6 +58,7 @@ public sealed class Settings
     public bool LimiterEnabled { get; set; } = true;
     public double LimiterCeilingDb { get; set; } = -1;
     public double LimiterReleaseMs { get; set; } = 60;
+    public double LimiterLookaheadMs { get; set; } = 2.0;
 
     public double OutputGainDb { get; set; }
 
@@ -101,6 +102,7 @@ public sealed class Settings
             LimiterEnabled = c.Limiter.Enabled,
             LimiterCeilingDb = c.Limiter.CeilingDb,
             LimiterReleaseMs = c.Limiter.ReleaseMs,
+            LimiterLookaheadMs = c.Limiter.LookaheadMs,
             OutputGainDb = c.OutputGain.GainDb
         };
         foreach (var b in c.Eq.Bands)
@@ -146,6 +148,7 @@ public sealed class Settings
         c.Limiter.Enabled = LimiterEnabled;
         c.Limiter.CeilingDb = LimiterCeilingDb;
         c.Limiter.ReleaseMs = LimiterReleaseMs;
+        c.Limiter.LookaheadMs = LimiterLookaheadMs;
         c.OutputGain.GainDb = OutputGainDb;
 
         for (int i = 0; i < EqBands.Count && i < c.Eq.Bands.Count; i++)
