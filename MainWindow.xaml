@@ -414,6 +414,29 @@
 
                 <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
                     <StackPanel>
+                        <TextBlock Text="Monitoring" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Text="Also send the processed audio to a second device so you can hear yourself while it feeds the virtual mic. Use headphones to avoid feedback."
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Monitor device" FontSize="12" Margin="0,0,0,5"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox Width="320" HorizontalAlignment="Left"
+                                          ItemsSource="{Binding Outputs}" SelectedItem="{Binding SelectedMonitorDevice}"
+                                          DisplayMemberPath="FriendlyName"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Bottom"
+                                      Margin="0,0,0,7" IsChecked="{Binding MonitorEnabled}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
+                    <StackPanel>
                         <TextBlock Text="About" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}" FontSize="12"
                                    Text="A real-time microphone processor. Route the output to a virtual audio cable and select it as your mic in any app."/>

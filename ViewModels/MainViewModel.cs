@@ -39,6 +39,7 @@ public sealed class MainViewModel : ViewModelBase
             _autoStartProcessing = saved.AutoStartProcessing;
             _minimizeToTray = saved.StartMinimized;
             _visualMode = saved.VisualMode;
+            _monitorEnabled = saved.MonitorEnabled;
         }
         SelectDefaults(saved);
         BuildStages();
@@ -166,6 +167,22 @@ public sealed class MainViewModel : ViewModelBase
             BuildStages();
         }
     }
+
+    private bool _monitorEnabled;
+    public bool MonitorEnabled
+    {
+        get => _monitorEnabled;
+        set { if (Set(ref _monitorEnabled, value)) ApplyMonitor(); }
+    }
+
+    private MMDevice _selectedMonitorDevice;
+    public MMDevice SelectedMonitorDevice
+    {
+        get => _selectedMonitorDevice;
+        set { if (Set(ref _selectedMonitorDevice, value)) ApplyMonitor(); }
+    }
+
+    private void ApplyMonitor() => _engine.ConfigureMonitor(_selectedMonitorDevice, _monitorEnabled);
 
     public string VersionText => "MicForge · v0.2 · PolyForm Noncommercial 1.0.0";
 
@@ -320,6 +337,10 @@ public sealed class MainViewModel : ViewModelBase
                          ?? Outputs.FirstOrDefault(d =>
                              d.FriendlyName.IndexOf("CABLE Input", StringComparison.OrdinalIgnoreCase) >= 0)
                          ?? Outputs.FirstOrDefault();
+
+        SelectedMonitorDevice = Outputs.FirstOrDefault(d => d.ID == saved?.MonitorDeviceId)
+                                ?? Outputs.FirstOrDefault(d => d.ID == AudioEngine.DefaultOutputId())
+                                ?? Outputs.FirstOrDefault();
     }
 
     // ---- run ----
@@ -391,6 +412,8 @@ public sealed class MainViewModel : ViewModelBase
         s.AutoStartProcessing = AutoStartProcessing;
         s.StartMinimized = MinimizeToTray;
         s.VisualMode = VisualMode;
+        s.MonitorEnabled = MonitorEnabled;
+        s.MonitorDeviceId = SelectedMonitorDevice?.ID;
         return s;
     }
 
