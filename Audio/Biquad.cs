@@ -88,4 +88,22 @@ public sealed class Biquad
     }
 
     public void Reset() => _z1 = _z2 = 0;
+
+    /// <summary>Magnitude response of this filter at a given frequency, in dB (for plotting).</summary>
+    public double MagnitudeDb(double freq, double sampleRate)
+    {
+        double w = 2 * Math.PI * freq / sampleRate;
+        double cw = Math.Cos(w), sw = Math.Sin(w);
+        double c2 = Math.Cos(2 * w), s2 = Math.Sin(2 * w);
+
+        double numRe = _b0 + _b1 * cw + _b2 * c2;
+        double numIm = -(_b1 * sw + _b2 * s2);
+        double denRe = 1 + _a1 * cw + _a2 * c2;
+        double denIm = -(_a1 * sw + _a2 * s2);
+
+        double num = Math.Sqrt(numRe * numRe + numIm * numIm);
+        double den = Math.Sqrt(denRe * denRe + denIm * denIm);
+        if (den < 1e-12) return 0;
+        return 20 * Math.Log10(num / den);
+    }
 }
