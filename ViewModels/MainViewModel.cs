@@ -183,7 +183,7 @@ public sealed class MainViewModel : ViewModelBase
         }
         else
         {
-            ns.Note = "AI noise suppression is active (rnnoise.dll loaded).";
+            ns.Note = "RNNoise loaded — enable the toggle to remove steady background noise.";
         }
         Stages.Add(ns);
 
