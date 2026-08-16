@@ -242,8 +242,11 @@
                                             <Style TargetType="Ellipse">
                                                 <Setter Property="Fill" Value="{StaticResource TextMutedBrush}"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <DataTrigger Binding="{Binding IsProcessing}" Value="True">
                                                         <Setter Property="Fill" Value="{StaticResource StartBrush}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsReconnecting}" Value="True">
+                                                        <Setter Property="Fill" Value="#E3B23C"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>

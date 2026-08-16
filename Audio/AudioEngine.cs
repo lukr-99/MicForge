@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Timers;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -10,7 +13,8 @@ namespace MicForge.Audio;
 /// <summary>
 /// Captures from a WASAPI input device, converts to mono 48 kHz float, runs the DSP
 /// chain, and renders to a WASAPI output device (normally the VB-CABLE virtual input).
-/// Optionally also mirrors the processed audio to a second device (headphone monitor).
+/// Optionally mirrors the processed audio to a second device (headphone monitor), and
+/// automatically reconnects if the input/output device is unplugged or changes.
 /// </summary>
 public sealed class AudioEngine : IDisposable
 {
@@ -26,8 +30,16 @@ public sealed class AudioEngine : IDisposable
     private MMDevice _monDevice;
     private bool _monEnabled;
 
+    // Reconnect state.
+    private string _inId, _inName, _outId, _outName;
+    private bool _userStopped = true;
+    private volatile bool _recovering;
+    private readonly object _lock = new();
+    private System.Timers.Timer _recoveryTimer;
+
     public DspChain Chain { get; } = new(SampleRate);
-    public bool Running { get; private set; }
+    public volatile bool Running;
+    public volatile bool Reconnecting;
 
     public static List<MMDevice> InputDevices() => Enumerate(DataFlow.Capture);
     public static List<MMDevice> OutputDevices() => Enumerate(DataFlow.Render);
@@ -54,8 +66,19 @@ public sealed class AudioEngine : IDisposable
 
     public void Start(MMDevice input, MMDevice output)
     {
-        Stop();
+        lock (_lock)
+        {
+            _userStopped = false;
+            _recovering = false;
+            _inId = input.ID; _inName = input.FriendlyName;
+            _outId = output.ID; _outName = output.FriendlyName;
+            StopStreams();
+            StartCore(input, output);
+        }
+    }
 
+    private void StartCore(MMDevice input, MMDevice output)
+    {
         _capture = new WasapiCapture(input, true, 30);
         var capFmt = _capture.WaveFormat;
         if (capFmt.Channels > 2)
@@ -68,6 +91,7 @@ public sealed class AudioEngine : IDisposable
             BufferDuration = TimeSpan.FromMilliseconds(500)
         };
         _capture.DataAvailable += (_, a) => _buffer.AddSamples(a.Buffer, 0, a.BytesRecorded);
+        _capture.RecordingStopped += OnStopped;
 
         // Capture format -> mono 48 kHz float.
         ISampleProvider sp = _buffer.ToSampleProvider();
@@ -78,7 +102,6 @@ public sealed class AudioEngine : IDisposable
 
         var dsp = new DspSampleProvider(sp, Chain);
 
-        // Tap the processed signal so a monitor output can mirror it.
         _monBuffer = new BufferedWaveProvider(WaveFormat.CreateIeeeFloatWaveFormat(SampleRate, 1))
         {
             DiscardOnBufferOverflow = true,
@@ -86,7 +109,6 @@ public sealed class AudioEngine : IDisposable
         };
         _tee = new TeeSampleProvider(dsp, _monBuffer);
 
-        // Mono 48 kHz -> output device mix format.
         var mix = output.AudioClient.MixFormat;
         ISampleProvider outProv = _tee;
         if (mix.SampleRate != SampleRate)
@@ -95,21 +117,87 @@ public sealed class AudioEngine : IDisposable
             outProv = new MonoToStereoSampleProvider(outProv);
 
         _output = new WasapiOut(output, AudioClientShareMode.Shared, true, 50);
+        _output.PlaybackStopped += OnStopped;
         _output.Init(outProv);
 
         _capture.StartRecording();
         _output.Play();
+
         Running = true;
+        Reconnecting = false;
+        _recovering = false;
 
         ApplyMonitor();
     }
 
-    /// <summary>Set which device (if any) mirrors the processed audio. Applies live.</summary>
+    // ---- reconnect ----
+
+    private void OnStopped(object sender, StoppedEventArgs e)
+    {
+        // Only react to unexpected stops (device lost); clean stops carry no exception.
+        if (_userStopped || e?.Exception == null) return;
+        BeginRecovery();
+    }
+
+    private void BeginRecovery()
+    {
+        if (_recovering) return;
+        _recovering = true;
+        Running = false;
+        Reconnecting = true;
+
+        // Never dispose the audio objects inside their own stopped-event; hop off it.
+        Task.Run(() =>
+        {
+            lock (_lock)
+            {
+                if (_userStopped) { _recovering = false; return; }
+                StopStreams();
+                EnsureRecoveryTimer();
+                _recoveryTimer.Start();
+            }
+        });
+    }
+
+    private void EnsureRecoveryTimer()
+    {
+        if (_recoveryTimer != null) return;
+        _recoveryTimer = new System.Timers.Timer(1500) { AutoReset = true };
+        _recoveryTimer.Elapsed += RecoveryTick;
+    }
+
+    private void RecoveryTick(object sender, ElapsedEventArgs e)
+    {
+        if (!Monitor.TryEnter(_lock)) return;
+        try
+        {
+            if (_userStopped || Running) { _recoveryTimer.Stop(); return; }
+
+            var inDev = Resolve(InputDevices(), _inId, _inName);
+            var outDev = Resolve(OutputDevices(), _outId, _outName);
+            if (inDev == null || outDev == null) return;   // devices not back yet; keep waiting
+
+            StopStreams();
+            StartCore(inDev, outDev);
+            _recoveryTimer.Stop();
+        }
+        catch
+        {
+            // Device came back mid-init or format not ready; keep retrying.
+        }
+        finally { Monitor.Exit(_lock); }
+    }
+
+    private static MMDevice Resolve(List<MMDevice> list, string id, string name)
+        => list.FirstOrDefault(d => d.ID == id) ?? list.FirstOrDefault(d => d.FriendlyName == name);
+
+    // ---- monitor ----
+
     public void ConfigureMonitor(MMDevice device, bool enabled)
     {
         _monDevice = device;
         _monEnabled = enabled;
-        if (Running) ApplyMonitor();
+        lock (_lock) { if (Running) ApplyMonitor(); }
     }
 
     private void ApplyMonitor()
@@ -151,9 +239,13 @@ public sealed class AudioEngine : IDisposable
         _monitor = null;
     }
 
-    public void Stop()
+    // ---- lifecycle ----
+
+    private void StopStreams()
     {
         StopMonitorOutput();
+        try { if (_output != null) _output.PlaybackStopped -= OnStopped; } catch { }
+        try { if (_capture != null) _capture.RecordingStopped -= OnStopped; } catch { }
         try { _output?.Stop(); } catch { }
         try { _capture?.StopRecording(); } catch { }
         _output?.Dispose(); _output = null;
@@ -161,8 +253,20 @@ public sealed class AudioEngine : IDisposable
         _buffer = null;
         _tee = null;
         _monBuffer = null;
-        Chain.Reset();
-        Running = false;
+    }
+
+    public void Stop()
+    {
+        lock (_lock)
+        {
+            _userStopped = true;
+            _recovering = false;
+            Reconnecting = false;
+            _recoveryTimer?.Stop();
+            StopStreams();
+            Chain.Reset();
+            Running = false;
+        }
     }
 
     public void Dispose() => Stop();

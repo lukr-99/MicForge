@@ -83,7 +83,7 @@ public sealed class MainViewModel : ViewModelBase
     private MMDevice _selectedOutput;
     public MMDevice SelectedOutput { get => _selectedOutput; set => Set(ref _selectedOutput, value); }
 
-    // ---- run state ----
+    // ---- run state (polled from the engine each meter tick) ----
     private bool _isRunning;
     public bool IsRunning
     {
@@ -93,7 +93,6 @@ public sealed class MainViewModel : ViewModelBase
             if (Set(ref _isRunning, value))
             {
                 OnPropertyChanged(nameof(StartStopText));
-                OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(NotRunning));
             }
         }
@@ -101,7 +100,15 @@ public sealed class MainViewModel : ViewModelBase
 
     public bool NotRunning => !_isRunning;
     public string StartStopText => _isRunning ? "Stop" : "Start";
-    public string StatusText => _isRunning ? "Processing" : "Stopped";
+
+    private bool _isProcessing;
+    public bool IsProcessing { get => _isProcessing; private set => Set(ref _isProcessing, value); }
+
+    private bool _isReconnecting;
+    public bool IsReconnecting { get => _isReconnecting; private set => Set(ref _isReconnecting, value); }
+
+    private string _statusText = "Stopped";
+    public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
 
     // ---- meters ----
     private double _inLevel, _outLevel;
@@ -346,10 +353,9 @@ public sealed class MainViewModel : ViewModelBase
     // ---- run ----
     private void ToggleRun()
     {
-        if (IsRunning)
+        if (_engine.Running || _engine.Reconnecting)
         {
             _engine.Stop();
-            IsRunning = false;
             return;
         }
 
@@ -362,7 +368,6 @@ public sealed class MainViewModel : ViewModelBase
         try
         {
             _engine.Start(SelectedInput, SelectedOutput);
-            IsRunning = true;
         }
         catch (Exception ex)
         {
@@ -372,6 +377,13 @@ public sealed class MainViewModel : ViewModelBase
 
     private void UpdateMeters()
     {
+        bool running = _engine.Running;
+        bool recon = _engine.Reconnecting;
+        IsRunning = running || recon;
+        IsProcessing = running && !recon;
+        IsReconnecting = recon;
+        StatusText = recon ? "Reconnecting…" : (running ? "Processing" : "Stopped");
+
         var chain = _engine.Chain;
         float ip = chain.InputPeak;
         InLevel = ToMeter(ip);
