@@ -212,22 +212,24 @@
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                                     VerticalAlignment="Center">
-                            <StackPanel Margin="0,0,14,0">
-                                <TextBlock Text="Input" FontSize="12" FontWeight="SemiBold" Margin="2,0,0,5"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
-                                <ComboBox Width="250" ItemsSource="{Binding Inputs}"
-                                          SelectedItem="{Binding SelectedInput}"
-                                          DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,8,0">
-                                <TextBlock Text="Output → virtual mic" FontSize="12" FontWeight="SemiBold" Margin="2,0,0,5"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
-                                <ComboBox Width="250" ItemsSource="{Binding Outputs}"
-                                          SelectedItem="{Binding SelectedOutput}"
-                                          DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
-                            </StackPanel>
+                            <Border Style="{StaticResource FieldBadge}" ToolTip="Input — your microphone">
+                                <TextBlock Text="IN" FontSize="11" FontWeight="SemiBold" Margin="10,0"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ComboBox Width="230" Margin="0,0,18,0" ItemsSource="{Binding Inputs}"
+                                      SelectedItem="{Binding SelectedInput}"
+                                      DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
+                            <Border Style="{StaticResource FieldBadge}" ToolTip="Output — virtual mic (CABLE Input)">
+                                <TextBlock Text="OUT" FontSize="11" FontWeight="SemiBold" Margin="10,0"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ComboBox Width="230" Margin="0,0,10,0" ItemsSource="{Binding Outputs}"
+                                      SelectedItem="{Binding SelectedOutput}"
+                                      DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
                             <Button Style="{StaticResource IconButton}" Content="⟳" FontSize="18"
-                                    Width="36" Height="36" VerticalAlignment="Bottom"
+                                    Width="36" Height="36" VerticalAlignment="Center"
                                     Command="{Binding RefreshCommand}" ToolTip="Refresh device list"/>
                         </StackPanel>
 

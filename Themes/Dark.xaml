@@ -136,6 +136,18 @@
         </Setter>
     </Style>
 
+    <!-- ============ Field badge (IN / OUT chips) ============ -->
+    <Style x:Key="FieldBadge" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MinWidth" Value="42"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
     <!-- ============ Toggle switch (CheckBox) ============ -->
     <Style x:Key="ToggleSwitch" TargetType="CheckBox">
         <Setter Property="Cursor" Value="Hand"/>
