@@ -9,22 +9,27 @@ using MicForge.ViewModels;
 namespace MicForge.Controls;
 
 /// <summary>
-/// Interactive equalizer curve. Draws the combined frequency response of all bands and
-/// lets you drag each band's handle (X = frequency, Y = gain; mouse-wheel = Q on peaks).
+/// Interactive equalizer curve. Draws the combined frequency response of all bands.
+/// Each handle sits ON the resulting curve at its band's frequency; dragging moves the
+/// curve to the cursor (X = frequency, Y = gain), mouse-wheel changes Q on bell bands.
+/// A live readout shows the band's exact frequency and gain.
 /// </summary>
 public sealed class EqGraph : FrameworkElement
 {
     private const double FMin = 20, FMax = 20000, GMax = 18;
-    private const double PadL = 30, PadR = 10, PadT = 10, PadB = 18;
+    private const double PadL = 34, PadR = 12, PadT = 12, PadB = 20;
 
     private static readonly Brush BgBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x18, 0x1B, 0x20)));
     private static readonly Pen GridPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x2A, 0x30, 0x38)), 1));
-    private static readonly Pen ZeroPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x3C, 0x44, 0x4E)), 1));
-    private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x8A, 0x92, 0x9A)));
+    private static readonly Pen ZeroPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x44, 0x4C, 0x56)), 1));
+    private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xAA, 0xB1, 0xB9)));
     private static readonly Brush CurveBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen CurvePen = Freeze(new Pen(CurveBrush, 2));
+    private static readonly Brush FillBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0x2E, 0xC4, 0xB6)));
     private static readonly Brush HandleBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen HandleStroke = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)), 1.5));
+    private static readonly Brush TagBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2A, 0x2F, 0x36)));
+    private static readonly Brush TagText = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF6)));
 
     private static T Freeze<T>(T f) where T : Freezable { f.Freeze(); return f; }
 
@@ -59,6 +64,21 @@ public sealed class EqGraph : FrameworkElement
     private static double YOf(double g, Rect r) => r.Top + (GMax - g) / (2 * GMax) * r.Height;
     private static double GOf(double y, Rect r) => GMax - (y - r.Top) / r.Height * (2 * GMax);
 
+    private double CombinedDb(double f)
+    {
+        double sum = 0;
+        foreach (var b in Model.Eq.Bands)
+            if (b.Enabled) sum += b.Filter.MagnitudeDb(f, Model.SampleRate);
+        return sum;
+    }
+
+    private Point HandlePoint(int i, Rect r)
+    {
+        var b = Model.Eq.Bands[i];
+        double f = Math.Clamp(b.Freq, FMin, FMax);
+        return new Point(XOf(f, r), YOf(Math.Clamp(CombinedDb(f), -GMax, GMax), r));
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
@@ -69,7 +89,6 @@ public sealed class EqGraph : FrameworkElement
         var r = Plot;
         double ppd = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
-        // Frequency grid + labels.
         (double f, string label)[] fLines =
         {
             (30, "30"), (100, "100"), (300, "300"), (1000, "1k"), (3000, "3k"), (10000, "10k")
@@ -78,67 +97,94 @@ public sealed class EqGraph : FrameworkElement
         {
             double x = XOf(f, r);
             dc.DrawLine(GridPen, new Point(x, r.Top), new Point(x, r.Bottom));
-            var ft = Text(label, 10, ppd);
+            var ft = Text(label, 10.5, ppd);
             dc.DrawText(ft, new Point(x - ft.Width / 2, r.Bottom + 3));
         }
-
-        // dB grid + labels.
         foreach (int g in new[] { -12, -6, 0, 6, 12 })
         {
             double y = YOf(g, r);
             dc.DrawLine(g == 0 ? ZeroPen : GridPen, new Point(r.Left, y), new Point(r.Right, y));
-            var ft = Text(g > 0 ? "+" + g : g.ToString(), 10, ppd);
-            dc.DrawText(ft, new Point(2, y - ft.Height / 2));
+            var ft = Text(g > 0 ? "+" + g : g.ToString(), 10.5, ppd);
+            dc.DrawText(ft, new Point(r.Left - ft.Width - 5, y - ft.Height / 2));
         }
 
-        // Combined response curve.
-        var geo = new StreamGeometry();
-        using (var ctx = geo.Open())
+        // Combined response curve, with a soft fill down to the 0 dB line.
+        var curve = new StreamGeometry();
+        var area = new StreamGeometry();
+        double y0 = YOf(0, r);
+        using (var cc = curve.Open())
+        using (var ac = area.Open())
         {
             bool first = true;
+            Point last = default;
             for (double x = r.Left; x <= r.Right; x += 2)
             {
-                double f = FOf(x, r);
-                double sum = 0;
-                foreach (var b in m.Eq.Bands)
-                    if (b.Enabled) sum += b.Filter.MagnitudeDb(f, m.SampleRate);
-                double y = YOf(Math.Clamp(sum, -GMax, GMax), r);
+                double y = YOf(Math.Clamp(CombinedDb(FOf(x, r)), -GMax, GMax), r);
                 var p = new Point(x, y);
-                if (first) { ctx.BeginFigure(p, false, false); first = false; }
-                else ctx.LineTo(p, true, false);
+                if (first)
+                {
+                    cc.BeginFigure(p, false, false);
+                    ac.BeginFigure(new Point(x, y0), true, true);
+                    ac.LineTo(p, true, false);
+                    first = false;
+                }
+                else { cc.LineTo(p, true, false); ac.LineTo(p, true, false); }
+                last = p;
             }
+            ac.LineTo(new Point(last.X, y0), true, false);
         }
-        geo.Freeze();
-        dc.DrawGeometry(null, CurvePen, geo);
+        curve.Freeze(); area.Freeze();
+        dc.DrawGeometry(FillBrush, null, area);
+        dc.DrawGeometry(null, CurvePen, curve);
 
-        // Handles.
+        // Handles (sitting on the curve).
         for (int i = 0; i < m.Eq.Bands.Count; i++)
         {
-            var b = m.Eq.Bands[i];
-            double x = XOf(Math.Clamp(b.Freq, FMin, FMax), r);
-            double y = YOf(Math.Clamp(b.GainDb, -GMax, GMax), r);
+            var p = HandlePoint(i, r);
             double rad = (i == _drag || i == _hover) ? 8 : 6;
-            dc.DrawEllipse(HandleBrush, HandleStroke, new Point(x, y), rad, rad);
+            dc.DrawEllipse(HandleBrush, HandleStroke, p, rad, rad);
         }
+
+        // Live readout for the active handle.
+        int active = _drag >= 0 ? _drag : _hover;
+        if (active >= 0) DrawReadout(dc, active, r, ppd);
     }
 
-    private FormattedText Text(string s, double size, double ppd)
+    private void DrawReadout(DrawingContext dc, int i, Rect r, double ppd)
+    {
+        var b = Model.Eq.Bands[i];
+        string freq = b.Freq >= 1000 ? $"{b.Freq / 1000:0.0} kHz" : $"{b.Freq:0} Hz";
+        string gain = $"{b.GainDb:+0.0;-0.0;0.0} dB";
+        var ft = Text($"{freq}   {gain}", 11.5, ppd, TagText);
+
+        var hp = HandlePoint(i, r);
+        double pad = 6;
+        double tw = ft.Width + pad * 2, th = ft.Height + pad;
+        double tx = Math.Clamp(hp.X - tw / 2, r.Left, r.Right - tw);
+        double ty = hp.Y - th - 12;
+        if (ty < r.Top) ty = hp.Y + 14;
+
+        dc.DrawRoundedRectangle(TagBrush, null, new Rect(tx, ty, tw, th), 4, 4);
+        dc.DrawText(ft, new Point(tx + pad, ty + pad / 2));
+    }
+
+    private FormattedText Text(string s, double size, double ppd, Brush brush = null)
         => new(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-            new Typeface("Segoe UI"), size, LabelBrush, ppd);
+            new Typeface("Segoe UI"), size, brush ?? LabelBrush, ppd);
 
     private int HitHandle(Point p)
     {
-        var m = Model;
-        if (m == null) return -1;
+        if (Model == null) return -1;
         var r = Plot;
-        for (int i = 0; i < m.Eq.Bands.Count; i++)
+        int best = -1;
+        double bestD = 15 * 15;
+        for (int i = 0; i < Model.Eq.Bands.Count; i++)
         {
-            var b = m.Eq.Bands[i];
-            double x = XOf(Math.Clamp(b.Freq, FMin, FMax), r);
-            double y = YOf(Math.Clamp(b.GainDb, -GMax, GMax), r);
-            if ((p.X - x) * (p.X - x) + (p.Y - y) * (p.Y - y) <= 13 * 13) return i;
+            var hp = HandlePoint(i, r);
+            double d = (p.X - hp.X) * (p.X - hp.X) + (p.Y - hp.Y) * (p.Y - hp.Y);
+            if (d <= bestD) { bestD = d; best = i; }
         }
-        return -1;
+        return best;
     }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
@@ -164,16 +210,23 @@ public sealed class EqGraph : FrameworkElement
         {
             var b = m.Eq.Bands[_drag];
             b.Freq = Math.Clamp(FOf(p.X, r), m.FreqMin[_drag], m.FreqMax[_drag]);
-            b.GainDb = Math.Clamp(GOf(p.Y, r), -GMax, GMax);
             m.Eq.UpdateAll();
+
+            // Move the combined curve at this frequency toward the cursor by adjusting the band gain.
+            double target = Math.Clamp(GOf(p.Y, r), -GMax, GMax);
+            double current = CombinedDb(b.Freq);
+            b.GainDb = Math.Clamp(b.GainDb + (target - current), -GMax, GMax);
+            m.Eq.UpdateAll();
+
             m.NotifyParamsChanged();
             InvalidateVisual();
         }
         else
         {
-            int h = HitHandle(p);
-            Cursor = h >= 0 ? Cursors.SizeAll : Cursors.Arrow;
-            if (h != _hover) { _hover = h; InvalidateVisual(); }
+            int hOld = _hover;
+            _hover = HitHandle(p);
+            Cursor = _hover >= 0 ? Cursors.SizeAll : Cursors.Arrow;
+            if (_hover != hOld) InvalidateVisual();
         }
     }
 
@@ -185,6 +238,11 @@ public sealed class EqGraph : FrameworkElement
             ReleaseMouseCapture();
             InvalidateVisual();
         }
+    }
+
+    protected override void OnMouseLeave(MouseEventArgs e)
+    {
+        if (_drag < 0 && _hover != -1) { _hover = -1; InvalidateVisual(); }
     }
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)
