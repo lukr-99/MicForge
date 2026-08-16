@@ -13,6 +13,7 @@ public sealed class LevelMeter : FrameworkElement
     private static readonly Brush Background;
     private static readonly Brush Fill;
     private static readonly Pen PeakPen;
+    private static readonly Brush ClipBrush;
 
     private double _peak;
     private DateTime _peakTime;
@@ -32,6 +33,19 @@ public sealed class LevelMeter : FrameworkElement
 
         PeakPen = new Pen(new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2)), 1.5);
         PeakPen.Freeze();
+
+        ClipBrush = new SolidColorBrush(Color.FromRgb(0xE5, 0x54, 0x3B));
+        ClipBrush.Freeze();
+    }
+
+    public static readonly DependencyProperty ClippingProperty = DependencyProperty.Register(
+        nameof(Clipping), typeof(bool), typeof(LevelMeter),
+        new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public bool Clipping
+    {
+        get => (bool)GetValue(ClippingProperty);
+        set => SetValue(ClippingProperty, value);
     }
 
     public static readonly DependencyProperty LevelProperty = DependencyProperty.Register(
@@ -80,6 +94,14 @@ public sealed class LevelMeter : FrameworkElement
         {
             double y = h - h * Math.Clamp(_peak, 0, 1);
             dc.DrawLine(PeakPen, new Point(1, y), new Point(w - 1, y));
+        }
+
+        if (Clipping)
+        {
+            var cap = new RectangleGeometry(new Rect(0, 0, w, h), r, r);
+            dc.PushClip(cap);
+            dc.DrawRectangle(ClipBrush, null, new Rect(0, 0, w, 5));
+            dc.Pop();
         }
     }
 }

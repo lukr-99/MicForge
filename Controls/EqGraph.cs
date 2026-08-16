@@ -27,6 +27,8 @@ public sealed class EqGraph : FrameworkElement
     private static readonly Pen ZeroPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x44, 0x4C, 0x56)), 1));
     private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xAA, 0xB1, 0xB9)));
     private static readonly Brush SpecBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x4A, 0x6E, 0x84, 0x99)));
+    private static readonly Brush SpecOutBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xC6, 0xCE, 0xD6)));
+    private static readonly Pen SpecOutPen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xC0, 0xC6, 0xCE, 0xD6)), 1.2));
     private static readonly Brush CurveBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0xC4, 0xB6)));
     private static readonly Pen CurvePen = Freeze(new Pen(CurveBrush, 2));
     private static readonly Brush FillBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x24, 0x2E, 0xC4, 0xB6)));
@@ -42,7 +44,8 @@ public sealed class EqGraph : FrameworkElement
     private readonly float[] _re = new float[N];
     private readonly float[] _im = new float[N];
     private readonly float[] _win = new float[N];
-    private readonly double[] _spec = new double[N / 2];   // smoothed 0..1 magnitudes
+    private readonly double[] _spec = new double[N / 2];        // input, smoothed 0..1
+    private readonly double[] _specOutDisp = new double[N / 2]; // output, smoothed 0..1
     private readonly DispatcherTimer _anim = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
     private int _drag = -1;
@@ -98,9 +101,9 @@ public sealed class EqGraph : FrameworkElement
         return new Point(XOf(f, r), YOf(Math.Clamp(CombinedDb(f), -GMax, GMax), r));
     }
 
-    private void UpdateSpectrum()
+    private void ComputeSpectrum(Action<float[]> copy, double[] disp)
     {
-        Model.Chain.CopySpectrum(_samples);
+        copy(_samples);
         for (int i = 0; i < N; i++) { _re[i] = _samples[i] * _win[i]; _im[i] = 0; }
         Fft.Forward(_re, _im);
         int bins = N / 2;
@@ -109,8 +112,59 @@ public sealed class EqGraph : FrameworkElement
             double mag = Math.Sqrt(_re[k] * _re[k] + _im[k] * _im[k]) / (N / 2);
             double dbfs = 20 * Math.Log10(mag + 1e-9);
             double norm = Math.Clamp((dbfs + 80) / 70.0, 0, 1);
-            _spec[k] = Math.Max(norm, _spec[k] * 0.88);   // fast rise, slow fall
+            disp[k] = Math.Max(norm, disp[k] * 0.88);   // fast rise, slow fall
         }
+    }
+
+    private static double SpecVal(double[] disp, double sr, double x, Rect r)
+    {
+        int bins = N / 2;
+        double kf = FOf(x, r) * N / sr;
+        int k0 = (int)kf;
+        if (k0 > bins - 2) k0 = bins - 2;
+        if (k0 < 0) k0 = 0;
+        double frac = kf - k0;
+        return disp[k0] * (1 - frac) + disp[k0 + 1] * frac;
+    }
+
+    private void DrawSpectrumArea(DrawingContext dc, Rect r, double[] disp, double sr)
+    {
+        var geo = new StreamGeometry();
+        using (var g = geo.Open())
+        {
+            g.BeginFigure(new Point(r.Left, r.Bottom), true, true);
+            for (double x = r.Left; x <= r.Right; x += 2)
+                g.LineTo(new Point(x, r.Bottom - SpecVal(disp, sr, x, r) * r.Height), true, false);
+            g.LineTo(new Point(r.Right, r.Bottom), true, false);
+        }
+        geo.Freeze();
+        dc.DrawGeometry(SpecBrush, null, geo);
+    }
+
+    private void DrawSpectrumLine(DrawingContext dc, Rect r, double[] disp, double sr)
+    {
+        var geo = new StreamGeometry();
+        using (var g = geo.Open())
+        {
+            bool first = true;
+            for (double x = r.Left; x <= r.Right; x += 2)
+            {
+                var p = new Point(x, r.Bottom - SpecVal(disp, sr, x, r) * r.Height);
+                if (first) { g.BeginFigure(p, false, false); first = false; }
+                else g.LineTo(p, true, false);
+            }
+        }
+        geo.Freeze();
+        dc.DrawGeometry(null, SpecOutPen, geo);
+    }
+
+    private void DrawSpectrumLegend(DrawingContext dc, Rect r, double ppd)
+    {
+        double x = r.Right - 76, y = r.Top + 3;
+        dc.DrawRectangle(SpecBrush, null, new Rect(x, y + 4, 12, 6));
+        dc.DrawText(Text("in", 10, ppd), new Point(x + 15, y));
+        dc.DrawRectangle(SpecOutBrush, null, new Rect(x + 38, y + 6, 12, 2));
+        dc.DrawText(Text("out", 10, ppd), new Point(x + 53, y));
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -123,30 +177,14 @@ public sealed class EqGraph : FrameworkElement
         var r = Plot;
         double ppd = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
-        // Live spectrum behind everything.
+        // Live spectrum behind everything: input as a filled area, output as a line.
         if (m.Chain != null)
         {
-            UpdateSpectrum();
-            int bins = N / 2;
-            double sr = m.SampleRate;
-            var geo = new StreamGeometry();
-            using (var g = geo.Open())
-            {
-                g.BeginFigure(new Point(r.Left, r.Bottom), true, true);
-                for (double x = r.Left; x <= r.Right; x += 2)
-                {
-                    double kf = FOf(x, r) * N / sr;
-                    int k0 = (int)kf;
-                    if (k0 > bins - 2) k0 = bins - 2;
-                    if (k0 < 0) k0 = 0;
-                    double frac = kf - k0;
-                    double val = _spec[k0] * (1 - frac) + _spec[k0 + 1] * frac;
-                    g.LineTo(new Point(x, r.Bottom - val * r.Height), true, false);
-                }
-                g.LineTo(new Point(r.Right, r.Bottom), true, false);
-            }
-            geo.Freeze();
-            dc.DrawGeometry(SpecBrush, null, geo);
+            ComputeSpectrum(m.Chain.CopySpectrum, _spec);
+            ComputeSpectrum(m.Chain.CopyOutputSpectrum, _specOutDisp);
+            DrawSpectrumArea(dc, r, _spec, m.SampleRate);
+            DrawSpectrumLine(dc, r, _specOutDisp, m.SampleRate);
+            DrawSpectrumLegend(dc, r, ppd);
         }
 
         // Grids + labels.

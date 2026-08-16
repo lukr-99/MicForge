@@ -337,8 +337,8 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <ctrl:LevelMeter Grid.Column="0" Level="{Binding InLevel}" Width="30" HorizontalAlignment="Center"/>
-                        <ctrl:LevelMeter Grid.Column="1" Level="{Binding OutLevel}" Width="30" HorizontalAlignment="Center"/>
+                        <ctrl:LevelMeter Grid.Column="0" Level="{Binding InLevel}" Clipping="{Binding InClip}" Width="30" HorizontalAlignment="Center"/>
+                        <ctrl:LevelMeter Grid.Column="1" Level="{Binding OutLevel}" Clipping="{Binding OutClip}" Width="30" HorizontalAlignment="Center"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="0,8,0,0">

@@ -24,7 +24,9 @@ public sealed class DspChain
 
     public const int SpectrumSamples = 2048;
     private readonly float[] _spec = new float[SpectrumSamples];
+    private readonly float[] _specOut = new float[SpectrumSamples];
     private int _specPos;
+    private int _specOutPos;
     private readonly object _specLock = new();
 
     public DspChain(double sampleRate)
@@ -65,7 +67,7 @@ public sealed class DspChain
         }
         InputPeak = ip;
 
-        if (Bypass) { OutputPeak = ip; return; }
+        if (Bypass) { OutputPeak = ip; CaptureOut(buffer, offset, count); return; }
 
         foreach (var p in _chain) p.Process(buffer, offset, count);
 
@@ -76,6 +78,19 @@ public sealed class DspChain
             if (a > op) op = a;
         }
         OutputPeak = op;
+        CaptureOut(buffer, offset, count);
+    }
+
+    private void CaptureOut(float[] buffer, int offset, int count)
+    {
+        lock (_specLock)
+        {
+            for (int i = offset; i < offset + count; i++)
+            {
+                _specOut[_specOutPos] = buffer[i];
+                if (++_specOutPos == SpectrumSamples) _specOutPos = 0;
+            }
+        }
     }
 
     public void Reset()
@@ -85,17 +100,22 @@ public sealed class DspChain
         OutputPeak = 0;
     }
 
-    /// <summary>Copies the most recent samples (oldest-first) for spectrum analysis.</summary>
-    public void CopySpectrum(float[] dest)
+    /// <summary>Copies the most recent input samples (oldest-first) for spectrum analysis.</summary>
+    public void CopySpectrum(float[] dest) => Copy(_spec, _specPos, dest);
+
+    /// <summary>Copies the most recent processed-output samples (oldest-first).</summary>
+    public void CopyOutputSpectrum(float[] dest) => Copy(_specOut, _specOutPos, dest);
+
+    private void Copy(float[] ring, int pos, float[] dest)
     {
         int n = dest.Length;
         lock (_specLock)
         {
-            int idx = _specPos - n;
+            int idx = pos - n;
             while (idx < 0) idx += SpectrumSamples;
             for (int i = 0; i < n; i++)
             {
-                dest[i] = _spec[idx];
+                dest[i] = ring[idx];
                 if (++idx == SpectrumSamples) idx = 0;
             }
         }

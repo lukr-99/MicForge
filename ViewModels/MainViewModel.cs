@@ -115,6 +115,11 @@ public sealed class MainViewModel : ViewModelBase
     public double InLevel { get => _inLevel; private set => Set(ref _inLevel, value); }
     public double OutLevel { get => _outLevel; private set => Set(ref _outLevel, value); }
 
+    private bool _inClip, _outClip;
+    public bool InClip { get => _inClip; private set => Set(ref _inClip, value); }
+    public bool OutClip { get => _outClip; private set => Set(ref _outClip, value); }
+    private DateTime _inClipT = DateTime.MinValue, _outClipT = DateTime.MinValue;
+
     private double _compLevelDb = -100;
     public double CompLevelDb { get => _compLevelDb; private set => Set(ref _compLevelDb, value); }
 
@@ -386,9 +391,16 @@ public sealed class MainViewModel : ViewModelBase
 
         var chain = _engine.Chain;
         float ip = chain.InputPeak;
+        float op = chain.OutputPeak;
         InLevel = ToMeter(ip);
-        OutLevel = ToMeter(chain.OutputPeak);
+        OutLevel = ToMeter(op);
         CompLevelDb = ip <= 0.00001f ? -100 : 20 * Math.Log10(ip);
+
+        var now = DateTime.UtcNow;
+        if (ip >= 0.999f) _inClipT = now;
+        if (op >= 0.999f) _outClipT = now;
+        InClip = (now - _inClipT).TotalMilliseconds < 1200;
+        OutClip = (now - _outClipT).TotalMilliseconds < 1200;
 
         var comp = chain.Compressor;
         GrText = $"{comp.GainReductionDb:0.0} dB";
