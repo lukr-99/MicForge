@@ -80,6 +80,25 @@ public sealed class Settings
     public double TargetLufs { get; set; } = -16;
     public double MaxAutoGainDb { get; set; } = 12;
 
+    public bool HumEnabled { get; set; }
+    public double HumFreq { get; set; } = 50;
+    public int HumHarmonics { get; set; } = 4;
+    public double HumQ { get; set; } = 30;
+
+    public bool DePlosiveEnabled { get; set; }
+    public double DePlosiveFreq { get; set; } = 150;
+    public double DePlosiveThresholdDb { get; set; } = -30;
+    public double DePlosiveStrength { get; set; } = 70;
+
+    public bool DeClickEnabled { get; set; }
+    public double DeClickFreq { get; set; } = 3000;
+    public double DeClickSensitivity { get; set; } = 6;
+    public double DeClickStrength { get; set; } = 70;
+
+    public bool VoiceEnabled { get; set; }
+    public double VoiceSemitones { get; set; }
+    public double VoiceMix { get; set; } = 100;
+
     // App-level (not part of the DSP chain).
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
@@ -136,7 +155,22 @@ public sealed class Settings
             OutputGainDb = c.OutputGain.GainDb,
             AutoLevel = c.Loudness.AutoLevel,
             TargetLufs = c.Loudness.TargetLufs,
-            MaxAutoGainDb = c.Loudness.MaxGainDb
+            MaxAutoGainDb = c.Loudness.MaxGainDb,
+            HumEnabled = c.Hum.Enabled,
+            HumFreq = c.Hum.Frequency,
+            HumHarmonics = c.Hum.Harmonics,
+            HumQ = c.Hum.Q,
+            DePlosiveEnabled = c.DePlosive.Enabled,
+            DePlosiveFreq = c.DePlosive.Frequency,
+            DePlosiveThresholdDb = c.DePlosive.ThresholdDb,
+            DePlosiveStrength = c.DePlosive.Strength,
+            DeClickEnabled = c.DeClicker.Enabled,
+            DeClickFreq = c.DeClicker.Frequency,
+            DeClickSensitivity = c.DeClicker.Sensitivity,
+            DeClickStrength = c.DeClicker.Strength,
+            VoiceEnabled = c.VoiceChanger.Enabled,
+            VoiceSemitones = c.VoiceChanger.Semitones,
+            VoiceMix = c.VoiceChanger.Mix
         };
         foreach (var b in c.Eq.Bands)
             s.EqBands.Add(new EqBandSetting
@@ -191,6 +225,21 @@ public sealed class Settings
         c.Loudness.AutoLevel = AutoLevel;
         c.Loudness.TargetLufs = TargetLufs;
         c.Loudness.MaxGainDb = MaxAutoGainDb;
+        c.Hum.Enabled = HumEnabled;
+        c.Hum.Frequency = HumFreq;
+        c.Hum.Harmonics = HumHarmonics;
+        c.Hum.Q = HumQ;
+        c.DePlosive.Enabled = DePlosiveEnabled;
+        c.DePlosive.Frequency = DePlosiveFreq;
+        c.DePlosive.ThresholdDb = DePlosiveThresholdDb;
+        c.DePlosive.Strength = DePlosiveStrength;
+        c.DeClicker.Enabled = DeClickEnabled;
+        c.DeClicker.Frequency = DeClickFreq;
+        c.DeClicker.Sensitivity = DeClickSensitivity;
+        c.DeClicker.Strength = DeClickStrength;
+        c.VoiceChanger.Enabled = VoiceEnabled;
+        c.VoiceChanger.Semitones = VoiceSemitones;
+        c.VoiceChanger.Mix = VoiceMix;
 
         for (int i = 0; i < EqBands.Count && i < c.Eq.Bands.Count; i++)
         {

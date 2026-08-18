@@ -492,6 +492,30 @@ public sealed class MainViewModel : ViewModelBase
             "Everything below this frequency is removed. 80–100 Hz suits most voices.");
         Stages.Add(hp);
 
+        var hum = new StageViewModel("Hum Remover", "#5C8A72", () => c.Hum.Enabled, v => c.Hum.Enabled = v)
+        {
+            Info = "Removes electrical mains hum and its harmonics with a stack of narrow notch filters. Pick 50 Hz (most of the world) or 60 Hz (North America) to match your grid."
+        };
+        hum.Add("Base freq", 40, 70, 10, () => c.Hum.Frequency, v => c.Hum.Frequency = v, "0", " Hz",
+            "Your mains frequency: 50 Hz in most of the world, 60 Hz in North America.");
+        hum.Add("Harmonics", 1, 10, 1, () => c.Hum.Harmonics, v => c.Hum.Harmonics = (int)v, "0", "",
+            "How many multiples of the base to notch out. More catches buzzier hum but costs a little tone.");
+        hum.Add("Sharpness", 5, 60, 1, () => c.Hum.Q, v => c.Hum.Q = v, "0", "",
+            "Notch narrowness (Q). Higher removes hum with less effect on the surrounding voice.");
+        Stages.Add(hum);
+
+        var dep = new StageViewModel("De-Plosive", "#6C8AB0", () => c.DePlosive.Enabled, v => c.DePlosive.Enabled = v)
+        {
+            Info = "Softens 'P' and 'B' pops — the bursts of low-frequency energy that thump the mic — by ducking only the low band for the instant a plosive hits."
+        };
+        dep.Add("Frequency", 80, 300, 10, () => c.DePlosive.Frequency, v => c.DePlosive.Frequency = v, "0", " Hz",
+            "The pop energy lives below this. 120–180 Hz suits most voices.");
+        dep.Add("Threshold", -60, 0, 1, () => c.DePlosive.ThresholdDb, v => c.DePlosive.ThresholdDb = v, "0", " dB",
+            "How loud the low band must get before it's treated as a pop.");
+        dep.Add("Strength", 0, 100, 1, () => c.DePlosive.Strength, v => c.DePlosive.Strength = v, "0", " %",
+            "How hard the pop is ducked when detected.");
+        Stages.Add(dep);
+
         var ns = new StageViewModel("Noise Suppression", "#8E7CE6", () => c.Suppressor.Enabled, v => c.Suppressor.Enabled = v)
         {
             Info = "AI (RNNoise) removal of steady background noise like fans, hiss and hum, while leaving speech intact. This is the modern replacement for a plain driver's noise reduction."
@@ -535,6 +559,18 @@ public sealed class MainViewModel : ViewModelBase
                 "How sure RNNoise must be that it's your voice before the smart gate opens.");
         }
         Stages.Add(gate);
+
+        var declick = new StageViewModel("De-Click", "#B08A6C", () => c.DeClicker.Enabled, v => c.DeClicker.Enabled = v)
+        {
+            Info = "Reduces mouth clicks and lip-smacks — the little tick sounds between words — by spotting fast high-frequency spikes and briefly ducking the high band."
+        };
+        declick.Add("Frequency", 1500, 6000, 100, () => c.DeClicker.Frequency, v => c.DeClicker.Frequency = v, "0", " Hz",
+            "The band where clicks are detected — usually 2–4 kHz.");
+        declick.Add("Sensitivity", 3, 18, 0.5, () => c.DeClicker.Sensitivity, v => c.DeClicker.Sensitivity = v, "0.0", " dB",
+            "How much a spike must jump above the running average to count as a click. Lower catches more (and risks softening consonants).");
+        declick.Add("Strength", 0, 100, 1, () => c.DeClicker.Strength, v => c.DeClicker.Strength = v, "0", " %",
+            "How hard a detected click is ducked.");
+        Stages.Add(declick);
 
         var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
             () => c.Eq.Enabled, v => c.Eq.Enabled = v)
@@ -601,6 +637,16 @@ public sealed class MainViewModel : ViewModelBase
             "Blend between the dry signal and the saturated signal.");
         Stages.Add(sat);
 
+        var voice = new StageViewModel("Voice Changer", "#9B6CE3", () => c.VoiceChanger.Enabled, v => c.VoiceChanger.Enabled = v)
+        {
+            Info = "Shifts your pitch up or down in real time — deep villain, chipmunk, or a subtle disguise. 0 semitones passes through untouched; ±12 is a full octave. (Also driven by the Crafting tab.)"
+        };
+        voice.Add("Pitch", -12, 12, 1, () => c.VoiceChanger.Semitones, v => c.VoiceChanger.Semitones = v, "0", " st",
+            "How many semitones to shift. Negative = deeper, positive = higher.");
+        voice.Add("Mix", 0, 100, 1, () => c.VoiceChanger.Mix, v => c.VoiceChanger.Mix = v, "0", " %",
+            "Blend between your natural voice and the shifted voice.");
+        Stages.Add(voice);
+
         var lim = new StageViewModel("Limiter", "#E5543B", () => c.Limiter.Enabled, v => c.Limiter.Enabled = v)
         {
             Info = "A safety net that stops the output from ever exceeding the ceiling, preventing digital clipping and distortion on sudden peaks."
@@ -634,8 +680,8 @@ public sealed class MainViewModel : ViewModelBase
         // Map each card to its processor (built in the chain's default order).
         var procs = new IAudioProcessor[]
         {
-            c.InputGain, c.InputAgc, c.HighPass, c.Suppressor, c.Gate, c.Eq,
-            c.Compressor, c.DeEsser, c.Saturation, c.Limiter, c.OutputGain, c.Loudness
+            c.InputGain, c.InputAgc, c.HighPass, c.Hum, c.DePlosive, c.Suppressor, c.Gate, c.DeClicker,
+            c.Eq, c.Compressor, c.DeEsser, c.Saturation, c.VoiceChanger, c.Limiter, c.OutputGain, c.Loudness
         };
         for (int i = 0; i < Stages.Count && i < procs.Length; i++) Stages[i].Processor = procs[i];
     }

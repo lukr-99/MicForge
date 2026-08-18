@@ -13,12 +13,16 @@ public sealed class DspChain
     public GainStage InputGain { get; }
     public InputAgc InputAgc { get; }
     public HighPassStage HighPass { get; }
+    public HumRemover Hum { get; }
+    public DePlosive DePlosive { get; }
     public NoiseSuppressor Suppressor { get; }
     public NoiseGate Gate { get; }
+    public DeClicker DeClicker { get; }
     public ParametricEq Eq { get; }
     public Compressor Compressor { get; }
     public DeEsser DeEsser { get; }
     public Saturation Saturation { get; }
+    public VoiceChanger VoiceChanger { get; }
     public Limiter Limiter { get; }
     public GainStage OutputGain { get; }
     public LoudnessProcessor Loudness { get; }
@@ -40,12 +44,16 @@ public sealed class DspChain
         InputGain = new GainStage("Input Gain");
         InputAgc = new InputAgc(sampleRate);
         HighPass = new HighPassStage(sampleRate);
+        Hum = new HumRemover(sampleRate);
+        DePlosive = new DePlosive(sampleRate);
         Suppressor = new NoiseSuppressor();
         Gate = new NoiseGate(sampleRate);
+        DeClicker = new DeClicker(sampleRate);
         Eq = new ParametricEq(sampleRate);
         Compressor = new Compressor(sampleRate);
         DeEsser = new DeEsser(sampleRate);
         Saturation = new Saturation();
+        VoiceChanger = new VoiceChanger(sampleRate);
         Limiter = new Limiter(sampleRate);
         OutputGain = new GainStage("Output Gain");
         Loudness = new LoudnessProcessor(sampleRate);
@@ -54,7 +62,8 @@ public sealed class DspChain
 
         _chain = new IAudioProcessor[]
         {
-            InputGain, InputAgc, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
+            InputGain, InputAgc, HighPass, Hum, DePlosive, Suppressor, Gate, DeClicker,
+            Eq, Compressor, DeEsser, Saturation, VoiceChanger, Limiter, OutputGain, Loudness
         };
         _order = _chain;
     }
