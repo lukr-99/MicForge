@@ -329,7 +329,7 @@
                     <ItemsControl ItemsSource="{Binding Stages}" ItemTemplate="{StaticResource StageTemplate}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"/>
+                                <ctrl:MasonryPanel ColumnWidth="314"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
