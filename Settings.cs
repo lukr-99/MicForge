@@ -86,6 +86,7 @@ public sealed class Settings
     public bool MonitorEnabled { get; set; }
     public string MonitorDeviceId { get; set; }
     public bool GlobalHotkeysEnabled { get; set; }
+    public bool ShowMuteOverlay { get; set; } = true;
     public List<HotkeyBinding> Hotkeys { get; set; }
 
     public static Settings CaptureFrom(DspChain c)

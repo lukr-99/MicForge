@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private bool _shownBalloon;
     private GlobalHotkeys _hotkeys;
     private WinForms.ToolStripMenuItem _muteItem, _bypassItem;
+    private OsdWindow _osd;
 
     public MainWindow()
     {
@@ -28,6 +29,9 @@ public partial class MainWindow : Window
         _vm.ExitRequested += ExitApp;
         _vm.ShowRequested += ShowFromTray;
         _vm.HotkeysChanged += RegisterHotkeys;
+        _vm.MuteFlashRequested += OnMuteFlash;
+
+        _osd = new OsdWindow();
 
         SetupTray();
         try { Icon = IconFactory.CreateImageSource(); } catch { }
@@ -132,10 +136,17 @@ public partial class MainWindow : Window
         _tray?.Dispose();
     }
 
+    private void OnMuteFlash(bool muted)
+    {
+        // Show the overlay when the user can't see the window (hotkey mute while elsewhere).
+        if (_vm.ShowMuteOverlay && !IsActive) _osd?.Flash(muted);
+    }
+
     private void ExitApp()
     {
         _exiting = true;
         _hotkeys?.Dispose();
+        _osd?.Close();
         _vm.Shutdown();
         _tray?.Dispose();
         Application.Current.Shutdown();

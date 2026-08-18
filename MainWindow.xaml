@@ -536,6 +536,20 @@
                         <TextBlock Text="Click Set, then press your combo (Esc cancels). A modifier (Ctrl/Alt/Shift/Win) is required, or use an F-key."
                                    FontSize="11" TextWrapping="Wrap" Margin="0,16,0,0"
                                    Foreground="{StaticResource TextMutedBrush}"/>
+
+                        <Grid Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Mute overlay"/>
+                                <TextBlock Text="Flash an on-screen indicator when you mute/unmute while MicForge isn't focused."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding ShowMuteOverlay}"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
             </StackPanel>

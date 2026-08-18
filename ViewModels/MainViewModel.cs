@@ -45,6 +45,7 @@ public sealed class MainViewModel : ViewModelBase
             _visualMode = saved.VisualMode;
             _monitorEnabled = saved.MonitorEnabled;
             _globalHotkeys = saved.GlobalHotkeysEnabled;
+            _showMuteOverlay = saved.ShowMuteOverlay;
         }
         SelectDefaults(saved);
         BuildStages();
@@ -230,11 +231,21 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     private bool _muted;
+    private bool _suppressMuteFlash;
     public bool Muted
     {
         get => _muted;
-        set { if (Set(ref _muted, value)) _engine.Chain.Mute = value; }
+        set
+        {
+            if (!Set(ref _muted, value)) return;
+            _engine.Chain.Mute = value;
+            if (!_suppressMuteFlash) MuteFlashRequested?.Invoke(value);
+        }
     }
+    public event Action<bool> MuteFlashRequested;
+
+    private bool _showMuteOverlay = true;
+    public bool ShowMuteOverlay { get => _showMuteOverlay; set => Set(ref _showMuteOverlay, value); }
 
     private bool _globalHotkeys;
     public bool GlobalHotkeysEnabled
@@ -666,6 +677,7 @@ public sealed class MainViewModel : ViewModelBase
         s.MonitorEnabled = MonitorEnabled;
         s.MonitorDeviceId = SelectedMonitorDevice?.ID;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
+        s.ShowMuteOverlay = ShowMuteOverlay;
         s.Hotkeys = Hotkeys.Select(h => new HotkeyBinding { Action = h.ActionId, Modifiers = h.Modifiers, Vk = h.Vk }).ToList();
         return s;
     }
