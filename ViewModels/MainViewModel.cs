@@ -300,6 +300,15 @@ public sealed class MainViewModel : ViewModelBase
     private double _gateGrDb;
     public double GateGrDb { get => _gateGrDb; private set => Set(ref _gateGrDb, value); }
 
+    // ---- mic health ----
+    private double _hiEnv = -100, _loEnv = 0;
+    private string _micHealthText = "—";
+    public string MicHealthText { get => _micHealthText; private set => Set(ref _micHealthText, value); }
+    private string _micHealthColor = "#6C7A89";
+    public string MicHealthColor { get => _micHealthColor; private set => Set(ref _micHealthColor, value); }
+    private string _micHealthTip = "Start processing to check your mic.";
+    public string MicHealthTip { get => _micHealthTip; private set => Set(ref _micHealthTip, value); }
+
     private double _limiterGrDb;
     public double LimiterGrDb { get => _limiterGrDb; private set => Set(ref _limiterGrDb, value); }
 
@@ -930,6 +939,8 @@ public sealed class MainViewModel : ViewModelBase
         InClip = (now - _inClipT).TotalMilliseconds < 1200;
         OutClip = (now - _outClipT).TotalMilliseconds < 1200;
 
+        UpdateMicHealth(ip, running && !recon);
+
         if (_learning)
         {
             double db = ip <= 0.00001f ? -120 : 20 * Math.Log10(ip);
@@ -966,6 +977,30 @@ public sealed class MainViewModel : ViewModelBase
         DeEsserActive = d.Enabled && d.ReductionDb < -0.3;
 
         LimiterGrDb = chain.Limiter.GainReductionDb;
+    }
+
+    private void UpdateMicHealth(float ip, bool processing)
+    {
+        if (!processing)
+        {
+            _hiEnv = -100; _loEnv = 0;
+            SetHealth("—", "#6C7A89", "Start processing to check your mic.");
+            return;
+        }
+
+        double db = ip <= 1e-5f ? -100 : 20 * Math.Log10(ip);
+        _hiEnv = db > _hiEnv ? db : _hiEnv - 0.5;   // speech-peak proxy (decays ~15 dB/s)
+        _loEnv = db < _loEnv ? db : _loEnv + 0.2;   // noise-floor proxy (rises slowly)
+
+        if (InClip)                 SetHealth("Too hot", "#E5543B", "Peaks are clipping — lower the input gain or back off the mic.");
+        else if (_hiEnv < -40)      SetHealth("Quiet", "#E3B23C", "Your voice is low — raise the input gain, or run Auto-calibrate.");
+        else if (_loEnv > -45)      SetHealth("Noisy", "#E3B23C", "High background noise — try the gate, or enable noise suppression.");
+        else                        SetHealth("Good", "#7FB069", "Levels look healthy.");
+    }
+
+    private void SetHealth(string text, string color, string tip)
+    {
+        MicHealthText = text; MicHealthColor = color; MicHealthTip = tip;
     }
 
     private static double ToMeter(float peak)

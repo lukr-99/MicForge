@@ -36,10 +36,12 @@ public partial class MainWindow : Window
         _vm.HotkeysChanged += RegisterHotkeys;
         _vm.MuteFlashRequested += OnMuteFlash;
         _vm.PttHookChanged += UpdatePttHook;
+        _vm.PropertyChanged += OnVmPropertyChanged;
 
         _osd = new OsdWindow();
 
         SetupTray();
+        UpdateTrayIcon();
         try { Icon = IconFactory.CreateImageSource(); } catch { }
 
         Loaded += OnLoaded;
@@ -315,5 +317,33 @@ public partial class MainWindow : Window
         menu.Items.Add("Exit", null, (_, _) => ExitApp());
 
         _tray.ContextMenuStrip = menu;
+    }
+
+    private IconFactory.TrayState? _trayState;
+    private void OnVmPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.Muted) or nameof(MainViewModel.IsProcessing)
+            or nameof(MainViewModel.IsRunning) or nameof(MainViewModel.IsReconnecting))
+            UpdateTrayIcon();
+    }
+
+    private void UpdateTrayIcon()
+    {
+        if (_tray == null) return;
+        var st = _vm.Muted ? IconFactory.TrayState.Muted
+               : _vm.IsProcessing ? IconFactory.TrayState.Live
+               : IconFactory.TrayState.Stopped;
+        if (st == _trayState) return;
+        _trayState = st;
+
+        var old = _tray.Icon;
+        try { _tray.Icon = IconFactory.CreateIcon(st); } catch { }
+        old?.Dispose();
+        _tray.Text = st switch
+        {
+            IconFactory.TrayState.Muted => "MicForge — muted",
+            IconFactory.TrayState.Live => "MicForge — live",
+            _ => "MicForge"
+        };
     }
 }

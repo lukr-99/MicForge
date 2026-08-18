@@ -51,9 +51,31 @@ internal static class IconFactory
         return p;
     }
 
-    public static Icon CreateIcon()
+    public enum TrayState { Stopped, Live, Muted }
+
+    public static Icon CreateIcon() => CreateIcon(TrayState.Stopped);
+
+    public static Icon CreateIcon(TrayState state)
     {
         using var bmp = Draw(32);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            if (state == TrayState.Live)
+            {
+                using var dot = new SolidBrush(Color.FromArgb(0x7F, 0xB0, 0x69));
+                using var ring = new Pen(Color.FromArgb(0x14, 0x16, 0x19), 1.5f);
+                g.FillEllipse(dot, 32 * 0.56f, 32 * 0.56f, 32 * 0.40f, 32 * 0.40f);
+                g.DrawEllipse(ring, 32 * 0.56f, 32 * 0.56f, 32 * 0.40f, 32 * 0.40f);
+            }
+            else if (state == TrayState.Muted)
+            {
+                using var pen = new Pen(Color.FromArgb(0xE5, 0x54, 0x3B), Math.Max(2f, 32 * 0.10f))
+                { StartCap = LineCap.Round, EndCap = LineCap.Round };
+                g.DrawLine(pen, 32 * 0.20f, 32 * 0.22f, 32 * 0.80f, 32 * 0.78f);
+            }
+        }
+
         IntPtr h = bmp.GetHicon();
         try { using var tmp = Icon.FromHandle(h); return (Icon)tmp.Clone(); }
         finally { DestroyIcon(h); }

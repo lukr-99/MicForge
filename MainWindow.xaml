@@ -291,6 +291,23 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Background="#33E5543B" CornerRadius="13" Padding="12,6" Margin="0,0,12,0"
+                                    VerticalAlignment="Center" ToolTip="Your mic is muted"
+                                    Visibility="{Binding Muted, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="9" Height="9" Margin="0,0,7,0" Fill="#E5543B"/>
+                                    <TextBlock Text="MUTED" FontSize="12" FontWeight="SemiBold" Foreground="#E5543B"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13" Padding="12,6"
+                                    Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="{Binding MicHealthTip}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="9" Height="9" Margin="0,0,7,0"
+                                             Fill="{Binding MicHealthColor, Converter={StaticResource HexToBrush}}"/>
+                                    <TextBlock Text="{Binding MicHealthText}" FontSize="12"
+                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                            </Border>
                             <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13"
                                     Padding="12,6" Margin="0,0,12,0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
