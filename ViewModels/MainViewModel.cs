@@ -29,8 +29,11 @@ public sealed class MainViewModel : ViewModelBase
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke());
         ShowProcessorCommand = new RelayCommand(() => SetPage("processor"));
         ShowSettingsCommand = new RelayCommand(() => SetPage("settings"));
+        ShowShortcutsCommand = new RelayCommand(() => SetPage("shortcuts"));
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
+        SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
+        ClearHotkeyCommand = new RelayCommand(p => { if (p is HotkeyVm h) { h.Clear(); OnHotkeysChanged(); } });
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -45,6 +48,7 @@ public sealed class MainViewModel : ViewModelBase
         }
         SelectDefaults(saved);
         BuildStages();
+        BuildHotkeys(saved);
 
         _startWithWindows = StartupManager.IsEnabled;
 
@@ -64,6 +68,10 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowSettingsCommand { get; }
     public RelayCommand ToggleBypassCommand { get; }
     public RelayCommand ToggleMuteCommand { get; }
+    public RelayCommand ShowShortcutsCommand { get; }
+    public RelayCommand SetHotkeyCommand { get; }
+    public RelayCommand ClearHotkeyCommand { get; }
+    public ObservableCollection<HotkeyVm> Hotkeys { get; } = new();
 
     public event Action HotkeysChanged;
 
@@ -71,11 +79,58 @@ public sealed class MainViewModel : ViewModelBase
     private string _page = "processor";
     public bool IsProcessorPage => _page == "processor";
     public bool IsSettingsPage => _page == "settings";
+    public bool IsShortcutsPage => _page == "shortcuts";
     private void SetPage(string p)
     {
         _page = p;
         OnPropertyChanged(nameof(IsProcessorPage));
         OnPropertyChanged(nameof(IsSettingsPage));
+        OnPropertyChanged(nameof(IsShortcutsPage));
+    }
+
+    // ---- hotkeys ----
+    private void BuildHotkeys(Settings saved)
+    {
+        Hotkeys.Clear();
+        Hotkeys.Add(new HotkeyVm("mute", "Mute", () => Muted = !Muted,
+            GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt, 0x4D));       // Ctrl+Alt+M
+        Hotkeys.Add(new HotkeyVm("bypass", "Bypass", () => Bypassed = !Bypassed,
+            GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt, 0x42));       // Ctrl+Alt+B
+        Hotkeys.Add(new HotkeyVm("startstop", "Start / Stop", () => StartStopCommand.Execute(null), 0, 0));
+
+        if (saved?.Hotkeys != null)
+            foreach (var b in saved.Hotkeys)
+                Hotkeys.FirstOrDefault(h => h.ActionId == b.Action)?.Assign(b.Modifiers, b.Vk);
+    }
+
+    private void BeginCapture(HotkeyVm hk)
+    {
+        if (hk == null) return;
+        foreach (var h in Hotkeys) h.Capturing = false;
+        hk.Capturing = true;
+    }
+
+    public bool IsCapturingHotkey => Hotkeys.Any(h => h.Capturing);
+
+    public void CancelCapture()
+    {
+        foreach (var h in Hotkeys) h.Capturing = false;
+    }
+
+    /// <summary>Called by the window when a key combo is captured for the pending hotkey.</summary>
+    public void AssignCapturedKey(uint modifiers, uint vk)
+    {
+        var hk = Hotkeys.FirstOrDefault(h => h.Capturing);
+        if (hk == null) return;
+        foreach (var h in Hotkeys) if (h != hk && h.Modifiers == modifiers && h.Vk == vk) h.Clear();
+        hk.Assign(modifiers, vk);
+        OnHotkeysChanged();
+    }
+
+    private void OnHotkeysChanged()
+    {
+        HotkeysChanged?.Invoke();
+        SaveSettings();
     }
 
     // ---- devices ----
@@ -601,6 +656,7 @@ public sealed class MainViewModel : ViewModelBase
         s.MonitorEnabled = MonitorEnabled;
         s.MonitorDeviceId = SelectedMonitorDevice?.ID;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
+        s.Hotkeys = Hotkeys.Select(h => new HotkeyBinding { Action = h.ActionId, Modifiers = h.Modifiers, Vk = h.Vk }).ToList();
         return s;
     }
 

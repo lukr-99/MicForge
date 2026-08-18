@@ -14,6 +14,13 @@ public sealed class EqBandSetting
     public double Q { get; set; }
 }
 
+public sealed class HotkeyBinding
+{
+    public string Action { get; set; }
+    public uint Modifiers { get; set; }
+    public uint Vk { get; set; }
+}
+
 /// <summary>Serializable snapshot of the whole DSP chain plus device selection.</summary>
 public sealed class Settings
 {
@@ -75,6 +82,7 @@ public sealed class Settings
     public bool MonitorEnabled { get; set; }
     public string MonitorDeviceId { get; set; }
     public bool GlobalHotkeysEnabled { get; set; }
+    public List<HotkeyBinding> Hotkeys { get; set; }
 
     public static Settings CaptureFrom(DspChain c)
     {

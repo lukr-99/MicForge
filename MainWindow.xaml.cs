@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using MicForge.ViewModels;
 using WinForms = System.Windows.Forms;
@@ -34,6 +35,32 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         StateChanged += OnStateChanged;
         Closing += OnClosing;
+        PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!_vm.IsCapturingHotkey) return;
+
+        Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
+            or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System)
+            return;
+
+        if (key == Key.Escape) { _vm.CancelCapture(); e.Handled = true; return; }
+
+        var m = Keyboard.Modifiers;
+        uint mods = 0;
+        if ((m & ModifierKeys.Control) != 0) mods |= GlobalHotkeys.ModControl;
+        if ((m & ModifierKeys.Alt) != 0) mods |= GlobalHotkeys.ModAlt;
+        if ((m & ModifierKeys.Shift) != 0) mods |= GlobalHotkeys.ModShift;
+        if ((m & ModifierKeys.Windows) != 0) mods |= GlobalHotkeys.ModWin;
+
+        bool isFunc = key >= Key.F1 && key <= Key.F24;
+        if (mods == 0 && !isFunc) return;   // require a modifier for ordinary keys
+
+        _vm.AssignCapturedKey(mods, (uint)KeyInterop.VirtualKeyFromKey(key));
+        e.Handled = true;
     }
 
     [DllImport("dwmapi.dll")]
@@ -74,9 +101,8 @@ public partial class MainWindow : Window
         _hotkeys.UnregisterAll();
         if (!_vm.GlobalHotkeysEnabled) return;
 
-        uint mod = GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt;
-        _hotkeys.Register(mod, 0x4D, () => _vm.ToggleMuteCommand.Execute(null));    // Ctrl+Alt+M
-        _hotkeys.Register(mod, 0x42, () => _vm.ToggleBypassCommand.Execute(null));  // Ctrl+Alt+B
+        foreach (var h in _vm.Hotkeys)
+            if (h.Vk != 0) _hotkeys.Register(h.Modifiers, h.Vk, h.Invoke);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
