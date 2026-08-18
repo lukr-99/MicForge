@@ -33,6 +33,8 @@ public sealed class MainViewModel : ViewModelBase
         ShowCraftingCommand = new RelayCommand(() => SetPage("crafting"));
         ShowMetersCommand = new RelayCommand(() => SetPage("meters"));
         ResetCraftingCommand = new RelayCommand(ResetCrafting);
+        ReloadCraftCommand = new RelayCommand(ReloadCraftCards);
+        OpenCraftFileCommand = new RelayCommand(OpenCraftFile);
         ResetLoudnessCommand = new RelayCommand(() => _engine.Chain.Loudness.ResetMeasurement());
         UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
         RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
@@ -95,6 +97,8 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowCraftingCommand { get; }
     public RelayCommand ShowMetersCommand { get; }
     public RelayCommand ResetCraftingCommand { get; }
+    public RelayCommand ReloadCraftCommand { get; }
+    public RelayCommand OpenCraftFileCommand { get; }
     public RelayCommand ResetLoudnessCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand RedoCommand { get; }
@@ -873,26 +877,34 @@ public sealed class MainViewModel : ViewModelBase
     {
         if (_craftingBuilt) return;
         _craftingBuilt = true;
+        foreach (var cfg in CraftCatalog.Load())
+            CraftCards.Add(new CraftCard(ApplyCrafting, cfg));
+    }
 
-        void Add(string id, string icon, string title, string blurb, double pitch, double[] eq, double drive)
-            => CraftCards.Add(new CraftCard(ApplyCrafting, id, icon, title, blurb, pitch, eq, drive));
+    /// <summary>Re-read craftcards.json, preserving which cards were on and at what strength.</summary>
+    private void ReloadCraftCards()
+    {
+        var states = new Dictionary<string, (bool on, double amt)>();
+        foreach (var c in CraftCards) states[c.Id] = (c.Enabled, c.Intensity);
 
-        //   id       icon  title         blurb                              pitch  EQ: low,lomid,mid,pres,air        drive
-        Add("bass",   "🔊", "Bass Boost", "Fuller, deeper low end.",             0, new[]{  6.0, 0.0, 0.0, 0.0,  0.0 }, 0);
-        Add("thin",   "🍃", "Bass Cut",   "Lighter, thinner — less rumble.",     0, new[]{ -6.0, 0.0, 0.0, 0.0,  0.0 }, 0);
-        Add("warm",   "🔥", "Warm",       "Cozy, radio-warm tone.",              0, new[]{  2.0, 1.0, 0.0,-1.0,  0.0 }, 0);
-        Add("bright", "✨", "Bright",     "Crisp and clear up top.",             0, new[]{  0.0, 0.0, 0.0, 3.0,  4.0 }, 0);
-        Add("pres",   "🎯", "Presence",   "Voice pushed forward.",               0, new[]{  0.0, 0.0, 2.0, 3.0,  0.0 }, 0);
-        Add("air",    "💨", "Air",        "Open, airy sheen.",                   0, new[]{  0.0, 0.0, 0.0, 0.0,  5.0 }, 0);
-        Add("radio",  "📻", "Radio",      "Old-school broadcast band.",          0, new[]{ -6.0,-1.0, 3.0, 1.0, -6.0 }, 6);
-        Add("phone",  "☎️", "Telephone",  "Tinny call-quality voice.",           0, new[]{-14.0, 0.0, 5.0, 2.0,-14.0 }, 0);
-        Add("mega",   "📢", "Megaphone",  "Loud-hailer honk.",                   0, new[]{ -8.0, 0.0, 6.0, 2.0, -4.0 }, 5);
-        Add("water",  "🌊", "Underwater", "Muffled and submerged.",              0, new[]{  2.0, 0.0,-4.0,-8.0,-10.0 }, 0);
-        Add("deep",   "🧛", "Deep Voice", "Lower, bigger, villainous.",         -4, new[]{  3.0, 0.0, 0.0, 0.0,  0.0 }, 0);
-        Add("chip",   "🐿️", "Chipmunk",   "High and squeaky.",                   5, new[]{  0.0, 0.0, 0.0, 0.0,  0.0 }, 0);
-        Add("robot",  "🤖", "Robot",      "Gritty machine voice.",              -2, new[]{  0.0, 0.0, 2.0, 1.0,  0.0 }, 8);
-        Add("whisp",  "👻", "Whisper",    "Soft, breathy, ghostly.",             0, new[]{ -3.0, 0.0, 0.0, 2.0,  4.0 }, 0);
-        Add("pod",    "🎙️", "Podcast",    "Smooth, full, professional.",         0, new[]{  3.0, 1.0, 0.0, 1.0,  1.0 }, 0);
+        CraftCards.Clear();
+        _craftingBuilt = false;
+        BuildCraftCards();
+
+        foreach (var c in CraftCards)
+            if (states.TryGetValue(c.Id, out var s)) c.SetSilently(s.on, s.amt);
+        ApplyCrafting();
+    }
+
+    private void OpenCraftFile()
+    {
+        try
+        {
+            CraftCatalog.EnsureFile();
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(CraftCatalog.FilePath) { UseShellExecute = true });
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
     /// <summary>Sum the enabled cards onto the EQ + Voice Changer + Saturation stages, live.</summary>

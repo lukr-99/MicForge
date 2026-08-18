@@ -480,6 +480,10 @@
                                        Foreground="{StaticResource TextMutedBrush}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Edit cards (JSON)" Command="{Binding OpenCraftFileCommand}" Margin="0,0,8,0"
+                                    ToolTip="Open craftcards.json to add or tweak cards"/>
+                            <Button Content="Reload" Command="{Binding ReloadCraftCommand}" Margin="0,0,8,0"
+                                    ToolTip="Re-read craftcards.json"/>
                             <Button Content="Reset" Command="{Binding ResetCraftingCommand}" Margin="0,0,8,0"/>
                             <Button Content="Save as preset…" Command="{Binding SavePresetCommand}"
                                     Style="{StaticResource PrimaryButton}"/>
@@ -511,11 +515,42 @@
                                             <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <CheckBox Style="{StaticResource ToggleSwitch}" HorizontalAlignment="Right"
-                                                  IsChecked="{Binding Enabled}"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <ToggleButton x:Name="CardInfo" Style="{StaticResource InfoToggle}" Margin="0,0,8,0"
+                                                          ToolTip="What it does"/>
+                                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Enabled}"/>
+                                        </StackPanel>
+                                        <Popup PlacementTarget="{Binding ElementName=CardInfo}" Placement="Bottom"
+                                               StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+                                               HorizontalOffset="-160" VerticalOffset="4"
+                                               IsOpen="{Binding IsChecked, ElementName=CardInfo}">
+                                            <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                                                    Padding="14" MaxWidth="260">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" FontSize="12"
+                                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Popup>
                                     </Grid>
                                     <TextBlock Text="{Binding Blurb}" FontSize="11" TextWrapping="Wrap" Height="30"
-                                               Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,4"/>
+                                               Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,2"/>
+                                    <ToggleButton x:Name="CardTech" Style="{StaticResource LinkToggle}"
+                                                  Content="⚙ Technical peek" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                                    <Popup PlacementTarget="{Binding ElementName=CardTech}" Placement="Bottom"
+                                           StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+                                           VerticalOffset="4" IsOpen="{Binding IsChecked, ElementName=CardTech}">
+                                        <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                                                Padding="12" MaxWidth="240">
+                                            <StackPanel>
+                                                <TextBlock Text="What it changes (at 100%)" FontWeight="SemiBold" FontSize="12"
+                                                           Margin="0,0,0,6"/>
+                                                <TextBlock Text="{Binding TechnicalPeek}" TextWrapping="Wrap" FontSize="12"
+                                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
                                     <Slider Style="{StaticResource Fader}" Minimum="0" Maximum="100"
                                             Value="{Binding Intensity, Mode=TwoWay}" IsEnabled="{Binding Enabled}"/>
                                 </StackPanel>

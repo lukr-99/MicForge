@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace MicForge.ViewModels;
 
@@ -6,34 +7,50 @@ namespace MicForge.ViewModels;
 /// One "voice character" card in the Crafting tab. Each card is a macro: a set of deltas
 /// (pitch, five EQ band gains, saturation drive) applied at its Intensity. Enabled cards
 /// are summed onto the EQ + Voice Changer + Saturation stages for an instant, layerable
-/// voice — no technical knobs required.
+/// voice — no technical knobs required. Definitions come from craftcards.json.
 /// </summary>
 public sealed class CraftCard : ViewModelBase
 {
+    private static readonly string[] BandNames = { "Low shelf", "Low-mid", "Mid", "Presence", "Air" };
     private readonly Action _onChange;
 
-    public CraftCard(Action onChange, string id, string icon, string title, string blurb,
-        double pitch, double[] eq, double drive)
+    public CraftCard(Action onChange, CraftCardConfig cfg)
     {
         _onChange = onChange;
-        Id = id;
-        Icon = icon;
-        Title = title;
-        Blurb = blurb;
-        Pitch = pitch;
-        Eq = eq;
-        Drive = drive;
+        Id = cfg.Id;
+        Icon = cfg.Icon;
+        Title = cfg.Title;
+        Blurb = cfg.Blurb;
+        Explanation = string.IsNullOrWhiteSpace(cfg.Explanation) ? cfg.Blurb : cfg.Explanation;
+        Pitch = cfg.Pitch;
+        Eq = cfg.Eq;
+        Drive = cfg.Drive;
     }
 
     public string Id { get; }
     public string Icon { get; }
     public string Title { get; }
     public string Blurb { get; }
+    public string Explanation { get; }
 
     // Deltas at 100% intensity.
     public double Pitch { get; }      // semitones
     public double[] Eq { get; }       // 5 band gain deltas (low shelf, low-mid, mid, presence, air)
     public double Drive { get; }      // saturation drive dB
+
+    /// <summary>Human-readable list of exactly what this card changes at full intensity.</summary>
+    public string TechnicalPeek
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (Math.Abs(Pitch) >= 0.01) parts.Add($"Pitch {Pitch:+0;-0} st");
+            for (int i = 0; i < 5 && i < Eq.Length; i++)
+                if (Math.Abs(Eq[i]) >= 0.01) parts.Add($"{BandNames[i]} {Eq[i]:+0.#;-0.#} dB");
+            if (Drive >= 0.5) parts.Add($"Saturation drive +{Drive:0.#} dB");
+            return parts.Count == 0 ? "No change." : string.Join("   ·   ", parts);
+        }
+    }
 
     private bool _enabled;
     public bool Enabled
