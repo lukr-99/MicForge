@@ -22,6 +22,13 @@ public sealed class HotkeyBinding
     public uint Vk { get; set; }
 }
 
+public sealed class CraftCardState
+{
+    public string Id { get; set; }
+    public bool Enabled { get; set; }
+    public double Intensity { get; set; } = 100;
+}
+
 /// <summary>Serializable snapshot of the whole DSP chain plus device selection.</summary>
 public sealed class Settings
 {
@@ -112,6 +119,7 @@ public sealed class Settings
     public bool PttHoldToTalk { get; set; } = true;
     public uint PttVk { get; set; }
     public List<HotkeyBinding> Hotkeys { get; set; }
+    public List<CraftCardState> CraftCards { get; set; }
 
     public static Settings CaptureFrom(DspChain c)
     {

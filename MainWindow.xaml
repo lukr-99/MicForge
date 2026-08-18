@@ -218,6 +218,14 @@
                               Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                     </Viewbox>
                 </Button>
+                <Button Style="{StaticResource NavButton}" ToolTip="Crafting"
+                        Command="{Binding ShowCraftingCommand}" Tag="{Binding IsCraftingPage}">
+                    <Viewbox Width="22" Height="22">
+                        <Path Stretch="Uniform"
+                              Data="M12,2C6.49,2,2,6.49,2,12s4.49,10,10,10c1.38,0,2.5-1.12,2.5-2.5c0-0.61-0.23-1.2-0.64-1.67 c-0.08-0.1-0.13-0.21-0.13-0.33c0-0.28,0.22-0.5,0.5-0.5H16c3.31,0,6-2.69,6-6C22,6.04,17.51,2,12,2z M6.5,13 C5.67,13,5,12.33,5,11.5S5.67,10,6.5,10S8,10.67,8,11.5S7.33,13,6.5,13z M9.5,9C8.67,9,8,8.33,8,7.5S8.67,6,9.5,6 S11,6.67,11,7.5S10.33,9,9.5,9z M14.5,9C13.67,9,13,8.33,13,7.5S13.67,6,14.5,6S16,6.67,16,7.5S15.33,9,14.5,9z M17.5,13 c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5,1.5-1.5s1.5,0.67,1.5,1.5S18.33,13,17.5,13z"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                    </Viewbox>
+                </Button>
                 <Button Style="{StaticResource NavButton}" ToolTip="Shortcuts"
                         Command="{Binding ShowShortcutsCommand}" Tag="{Binding IsShortcutsPage}">
                     <Viewbox Width="22" Height="22">
@@ -427,6 +435,69 @@
             </Border>
             </Grid>
         </Grid>
+
+        <!-- ================= CRAFTING PAGE ================= -->
+        <ScrollViewer Grid.Column="1" Margin="14" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsCraftingPage, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <Border Style="{StaticResource Card}" Padding="20,14" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Craft your voice" FontSize="20" FontWeight="Bold"/>
+                            <TextBlock Text="Stack character cards and dial their strength — they blend into the EQ, pitch and saturation live. No technical knobs required."
+                                       FontSize="11" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Reset" Command="{Binding ResetCraftingCommand}" Margin="0,0,8,0"/>
+                            <Button Content="Save as preset…" Command="{Binding SavePresetCommand}"
+                                    Style="{StaticResource PrimaryButton}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Live preview — tone curve + spectrum" FontSize="11"
+                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+                        <ctrl:EqGraph Height="180" Model="{Binding EqStage}" IsHitTestVisible="False"/>
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding CraftCards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Width="220" Margin="0,0,12,12" Padding="14">
+                                <StackPanel>
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Icon}" FontSize="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <CheckBox Style="{StaticResource ToggleSwitch}" HorizontalAlignment="Right"
+                                                  IsChecked="{Binding Enabled}"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Blurb}" FontSize="11" TextWrapping="Wrap" Height="30"
+                                               Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,4"/>
+                                    <Slider Style="{StaticResource Fader}" Minimum="0" Maximum="100"
+                                            Value="{Binding Intensity, Mode=TwoWay}" IsEnabled="{Binding Enabled}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
 
         <!-- ================= SETTINGS PAGE ================= -->
         <ScrollViewer Grid.Column="1" Margin="14" VerticalScrollBarVisibility="Auto"

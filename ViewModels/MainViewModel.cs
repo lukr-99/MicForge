@@ -30,6 +30,8 @@ public sealed class MainViewModel : ViewModelBase
         ShowProcessorCommand = new RelayCommand(() => SetPage("processor"));
         ShowSettingsCommand = new RelayCommand(() => SetPage("settings"));
         ShowShortcutsCommand = new RelayCommand(() => SetPage("shortcuts"));
+        ShowCraftingCommand = new RelayCommand(() => SetPage("crafting"));
+        ResetCraftingCommand = new RelayCommand(ResetCrafting);
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
         SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
@@ -55,6 +57,7 @@ public sealed class MainViewModel : ViewModelBase
         SelectDefaults(saved);
         BuildStages();
         ApplyStageOrder(saved?.StageOrder);
+        RestoreCrafting(saved);
         BuildHotkeys(saved);
         if (_pttEnabled) ApplyPttState();
 
@@ -77,6 +80,8 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ToggleBypassCommand { get; }
     public RelayCommand ToggleMuteCommand { get; }
     public RelayCommand ShowShortcutsCommand { get; }
+    public RelayCommand ShowCraftingCommand { get; }
+    public RelayCommand ResetCraftingCommand { get; }
     public RelayCommand SetHotkeyCommand { get; }
     public RelayCommand ClearHotkeyCommand { get; }
     public RelayCommand SetPttKeyCommand { get; }
@@ -91,12 +96,14 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsProcessorPage => _page == "processor";
     public bool IsSettingsPage => _page == "settings";
     public bool IsShortcutsPage => _page == "shortcuts";
+    public bool IsCraftingPage => _page == "crafting";
     private void SetPage(string p)
     {
         _page = p;
         OnPropertyChanged(nameof(IsProcessorPage));
         OnPropertyChanged(nameof(IsSettingsPage));
         OnPropertyChanged(nameof(IsShortcutsPage));
+        OnPropertyChanged(nameof(IsCraftingPage));
     }
 
     // ---- hotkeys ----
@@ -599,6 +606,7 @@ public sealed class MainViewModel : ViewModelBase
             "Boost or cut around the P3 frequency.");
         eq.Add("High shelf", -18, 18, 0.5, () => c.Eq.Bands[4].GainDb, v => { c.Eq.Bands[4].GainDb = v; c.Eq.UpdateAll(); }, "0.0", " dB",
             "Boosts or cuts everything above its frequency — air and brightness.");
+        _eqStage = eq;
         Stages.Add(eq);
 
         var comp = new CompressorStageViewModel(c.Compressor, "#E3B23C",
@@ -749,6 +757,107 @@ public sealed class MainViewModel : ViewModelBase
         RenumberAndApplyChain(save: true);
     }
 
+    // ---- crafting (macro voice cards) ----
+    private EqStageViewModel _eqStage;
+    public EqStageViewModel EqStage => _eqStage;
+    public ObservableCollection<CraftCard> CraftCards { get; } = new();
+    private bool _craftingBuilt;
+
+    private void BuildCraftCards()
+    {
+        if (_craftingBuilt) return;
+        _craftingBuilt = true;
+
+        void Add(string id, string icon, string title, string blurb, double pitch, double[] eq, double drive)
+            => CraftCards.Add(new CraftCard(ApplyCrafting, id, icon, title, blurb, pitch, eq, drive));
+
+        //   id       icon  title         blurb                              pitch  EQ: low,lomid,mid,pres,air        drive
+        Add("bass",   "🔊", "Bass Boost", "Fuller, deeper low end.",             0, new[]{  6.0, 0.0, 0.0, 0.0,  0.0 }, 0);
+        Add("thin",   "🍃", "Bass Cut",   "Lighter, thinner — less rumble.",     0, new[]{ -6.0, 0.0, 0.0, 0.0,  0.0 }, 0);
+        Add("warm",   "🔥", "Warm",       "Cozy, radio-warm tone.",              0, new[]{  2.0, 1.0, 0.0,-1.0,  0.0 }, 0);
+        Add("bright", "✨", "Bright",     "Crisp and clear up top.",             0, new[]{  0.0, 0.0, 0.0, 3.0,  4.0 }, 0);
+        Add("pres",   "🎯", "Presence",   "Voice pushed forward.",               0, new[]{  0.0, 0.0, 2.0, 3.0,  0.0 }, 0);
+        Add("air",    "💨", "Air",        "Open, airy sheen.",                   0, new[]{  0.0, 0.0, 0.0, 0.0,  5.0 }, 0);
+        Add("radio",  "📻", "Radio",      "Old-school broadcast band.",          0, new[]{ -6.0,-1.0, 3.0, 1.0, -6.0 }, 6);
+        Add("phone",  "☎️", "Telephone",  "Tinny call-quality voice.",           0, new[]{-14.0, 0.0, 5.0, 2.0,-14.0 }, 0);
+        Add("mega",   "📢", "Megaphone",  "Loud-hailer honk.",                   0, new[]{ -8.0, 0.0, 6.0, 2.0, -4.0 }, 5);
+        Add("water",  "🌊", "Underwater", "Muffled and submerged.",              0, new[]{  2.0, 0.0,-4.0,-8.0,-10.0 }, 0);
+        Add("deep",   "🧛", "Deep Voice", "Lower, bigger, villainous.",         -4, new[]{  3.0, 0.0, 0.0, 0.0,  0.0 }, 0);
+        Add("chip",   "🐿️", "Chipmunk",   "High and squeaky.",                   5, new[]{  0.0, 0.0, 0.0, 0.0,  0.0 }, 0);
+        Add("robot",  "🤖", "Robot",      "Gritty machine voice.",              -2, new[]{  0.0, 0.0, 2.0, 1.0,  0.0 }, 8);
+        Add("whisp",  "👻", "Whisper",    "Soft, breathy, ghostly.",             0, new[]{ -3.0, 0.0, 0.0, 2.0,  4.0 }, 0);
+        Add("pod",    "🎙️", "Podcast",    "Smooth, full, professional.",         0, new[]{  3.0, 1.0, 0.0, 1.0,  1.0 }, 0);
+    }
+
+    /// <summary>Sum the enabled cards onto the EQ + Voice Changer + Saturation stages, live.</summary>
+    private void ApplyCrafting()
+    {
+        var c = _engine.Chain;
+        double pitch = 0, drive = 0;
+        var eq = new double[5];
+        bool any = false;
+        foreach (var card in CraftCards)
+        {
+            double s = card.Scale;
+            if (s <= 0) continue;
+            any = true;
+            pitch += card.Pitch * s;
+            drive += card.Drive * s;
+            for (int i = 0; i < 5; i++) eq[i] += card.Eq[i] * s;
+        }
+
+        for (int i = 0; i < 5 && i < c.Eq.Bands.Count; i++)
+            c.Eq.Bands[i].GainDb = Math.Clamp(eq[i], -18, 18);
+        c.Eq.UpdateAll();
+        if (any) c.Eq.Enabled = true;
+
+        double semi = Math.Clamp(pitch, -12, 12);
+        c.VoiceChanger.Semitones = semi;
+        c.VoiceChanger.Enabled = Math.Abs(semi) >= 0.05;
+
+        if (drive > 0.5)
+        {
+            c.Saturation.DriveDb = Math.Clamp(drive, 0, 24);
+            c.Saturation.Mix = 60;
+            c.Saturation.Enabled = true;
+        }
+        else if (any)
+        {
+            c.Saturation.Enabled = false;
+        }
+
+        RefreshParamDisplays();
+        SaveSettings();
+    }
+
+    private void ResetCrafting()
+    {
+        foreach (var card in CraftCards) card.SetSilently(false, card.Intensity);
+        ApplyCrafting();
+    }
+
+    private void RestoreCrafting(Settings saved)
+    {
+        BuildCraftCards();
+        if (saved?.CraftCards == null) return;
+        bool any = false;
+        foreach (var st in saved.CraftCards)
+        {
+            var card = CraftCards.FirstOrDefault(x => x.Id == st.Id);
+            if (card == null) continue;
+            card.SetSilently(st.Enabled, st.Intensity);
+            if (st.Enabled) any = true;
+        }
+        if (any) ApplyCrafting();
+    }
+
+    /// <summary>Re-read every param slider from the model (after crafting changes values under it).</summary>
+    private void RefreshParamDisplays()
+    {
+        foreach (var s in Stages)
+            foreach (var p in s.Params) p.NotifyChanged();
+    }
+
     // ---- device helpers ----
     private void LoadDevices()
     {
@@ -887,6 +996,7 @@ public sealed class MainViewModel : ViewModelBase
         s.PttHoldToTalk = PttHoldToTalk;
         s.PttVk = PttVk;
         s.Hotkeys = Hotkeys.Select(h => new HotkeyBinding { Action = h.ActionId, Modifiers = h.Modifiers, Vk = h.Vk }).ToList();
+        s.CraftCards = CraftCards.Select(x => new CraftCardState { Id = x.Id, Enabled = x.Enabled, Intensity = x.Intensity }).ToList();
         return s;
     }
 
