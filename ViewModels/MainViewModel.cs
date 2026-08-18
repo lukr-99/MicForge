@@ -453,7 +453,7 @@ public sealed class MainViewModel : ViewModelBase
 
     private void ApplyMonitor() => _engine.ConfigureMonitor(_selectedMonitorDevice, _monitorEnabled);
 
-    public string VersionText => "MicForge · v0.2 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.0.0 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
