@@ -34,6 +34,7 @@ public sealed class MainViewModel : ViewModelBase
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
         SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
         ClearHotkeyCommand = new RelayCommand(p => { if (p is HotkeyVm h) { h.Clear(); OnHotkeysChanged(); } });
+        SetPttKeyCommand = new RelayCommand(BeginPttCapture);
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -46,10 +47,14 @@ public sealed class MainViewModel : ViewModelBase
             _monitorEnabled = saved.MonitorEnabled;
             _globalHotkeys = saved.GlobalHotkeysEnabled;
             _showMuteOverlay = saved.ShowMuteOverlay;
+            _pttEnabled = saved.PttEnabled;
+            _pttHoldToTalk = saved.PttHoldToTalk;
+            _pttVk = saved.PttVk;
         }
         SelectDefaults(saved);
         BuildStages();
         BuildHotkeys(saved);
+        if (_pttEnabled) ApplyPttState();
 
         _startWithWindows = StartupManager.IsEnabled;
 
@@ -72,9 +77,11 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowShortcutsCommand { get; }
     public RelayCommand SetHotkeyCommand { get; }
     public RelayCommand ClearHotkeyCommand { get; }
+    public RelayCommand SetPttKeyCommand { get; }
     public ObservableCollection<HotkeyVm> Hotkeys { get; } = new();
 
     public event Action HotkeysChanged;
+    public event Action PttHookChanged;
 
     // ---- navigation ----
     private string _page = "processor";
@@ -132,6 +139,80 @@ public sealed class MainViewModel : ViewModelBase
     {
         HotkeysChanged?.Invoke();
         SaveSettings();
+    }
+
+    // ---- push-to-talk / push-to-mute ----
+    private bool _pttEnabled;
+    public bool PttEnabled
+    {
+        get => _pttEnabled;
+        set
+        {
+            if (!Set(ref _pttEnabled, value)) return;
+            _pttHeld = false;
+            if (value) ApplyPttState();
+            else { _suppressMuteFlash = true; Muted = false; _suppressMuteFlash = false; }
+            SaveSettings();
+            PttHookChanged?.Invoke();
+        }
+    }
+
+    private bool _pttHoldToTalk = true;   // true: muted until held (talk); false: live until held (mute)
+    public bool PttHoldToTalk
+    {
+        get => _pttHoldToTalk;
+        set { if (Set(ref _pttHoldToTalk, value)) { ApplyPttState(); SaveSettings(); } }
+    }
+
+    private uint _pttVk;
+    public uint PttVk
+    {
+        get => _pttVk;
+        private set { _pttVk = value; OnPropertyChanged(nameof(PttKeyDisplay)); }
+    }
+    public string PttKeyDisplay => _pttVk == 0 ? "Not set" : HotkeyVm.Format(0, _pttVk);
+
+    private bool _pttHeld;
+
+    private bool _capturingPtt;
+    public bool CapturingPtt
+    {
+        get => _capturingPtt;
+        private set { if (Set(ref _capturingPtt, value)) OnPropertyChanged(nameof(SetPttText)); }
+    }
+    public string SetPttText => CapturingPtt ? "Press a key…" : "Set key";
+
+    private void BeginPttCapture()
+    {
+        foreach (var h in Hotkeys) h.Capturing = false;
+        CapturingPtt = true;
+    }
+
+    public void CancelPttCapture() => CapturingPtt = false;
+
+    public void AssignPttKey(uint vk)
+    {
+        PttVk = vk;
+        CapturingPtt = false;
+        if (PttEnabled) ApplyPttState();
+        SaveSettings();
+    }
+
+    /// <summary>Called by the keyboard hook when the push-to-talk key is pressed/released.</summary>
+    public void PttKeyEvent(uint vk, bool down)
+    {
+        if (!PttEnabled || _pttVk == 0 || vk != _pttVk || down == _pttHeld) return;
+        _pttHeld = down;
+        ApplyPttState();
+    }
+
+    private void ApplyPttState()
+    {
+        if (!PttEnabled) return;
+        bool muted = _pttHoldToTalk ? !_pttHeld : _pttHeld;
+        _suppressMuteFlash = true;
+        Muted = muted;
+        _suppressMuteFlash = false;
     }
 
     // ---- devices ----
@@ -678,6 +759,9 @@ public sealed class MainViewModel : ViewModelBase
         s.MonitorDeviceId = SelectedMonitorDevice?.ID;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
         s.ShowMuteOverlay = ShowMuteOverlay;
+        s.PttEnabled = PttEnabled;
+        s.PttHoldToTalk = PttHoldToTalk;
+        s.PttVk = PttVk;
         s.Hotkeys = Hotkeys.Select(h => new HotkeyBinding { Action = h.ActionId, Modifiers = h.Modifiers, Vk = h.Vk }).ToList();
         return s;
     }

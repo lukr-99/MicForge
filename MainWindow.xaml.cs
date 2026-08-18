@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private GlobalHotkeys _hotkeys;
     private WinForms.ToolStripMenuItem _muteItem, _bypassItem;
     private OsdWindow _osd;
+    private KeyboardHook _kbHook;
 
     public MainWindow()
     {
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
         _vm.ShowRequested += ShowFromTray;
         _vm.HotkeysChanged += RegisterHotkeys;
         _vm.MuteFlashRequested += OnMuteFlash;
+        _vm.PttHookChanged += UpdatePttHook;
 
         _osd = new OsdWindow();
 
@@ -44,6 +46,18 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (_vm.CapturingPtt)
+        {
+            Key pk = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (pk is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
+                or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System)
+                return;
+            if (pk == Key.Escape) { _vm.CancelPttCapture(); e.Handled = true; return; }
+            _vm.AssignPttKey((uint)KeyInterop.VirtualKeyFromKey(pk));
+            e.Handled = true;
+            return;
+        }
+
         if (!_vm.IsCapturingHotkey) return;
 
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
@@ -91,6 +105,23 @@ public partial class MainWindow : Window
             RegisterHotkeys();
         }
         catch { }
+
+        UpdatePttHook();
+    }
+
+    private void UpdatePttHook()
+    {
+        if (_vm.PttEnabled && _kbHook == null)
+        {
+            _kbHook = new KeyboardHook();
+            _kbHook.KeyDown += vk => Dispatcher.BeginInvoke(() => _vm.PttKeyEvent(vk, true));
+            _kbHook.KeyUp += vk => Dispatcher.BeginInvoke(() => _vm.PttKeyEvent(vk, false));
+        }
+        else if (!_vm.PttEnabled && _kbHook != null)
+        {
+            _kbHook.Dispose();
+            _kbHook = null;
+        }
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -146,6 +177,7 @@ public partial class MainWindow : Window
     {
         _exiting = true;
         _hotkeys?.Dispose();
+        _kbHook?.Dispose();
         _osd?.Close();
         _vm.Shutdown();
         _tray?.Dispose();
