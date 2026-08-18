@@ -83,6 +83,7 @@ public sealed class Settings
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
     public bool VisualMode { get; set; }
+    public List<string> StageOrder { get; set; }
     public bool MonitorEnabled { get; set; }
     public string MonitorDeviceId { get; set; }
     public bool GlobalHotkeysEnabled { get; set; }

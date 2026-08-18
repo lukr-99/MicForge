@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using MicForge.ViewModels;
 using WinForms = System.Windows.Forms;
 
@@ -20,6 +21,8 @@ public partial class MainWindow : Window
     private WinForms.ToolStripMenuItem _muteItem, _bypassItem;
     private OsdWindow _osd;
     private KeyboardHook _kbHook;
+    private Point _dragStart;
+    private StageViewModel _dragStage;
 
     public MainWindow()
     {
@@ -42,6 +45,66 @@ public partial class MainWindow : Window
         StateChanged += OnStateChanged;
         Closing += OnClosing;
         PreviewKeyDown += OnPreviewKeyDown;
+
+        StagesList.PreviewMouseLeftButtonDown += StagesPreviewMouseDown;
+        StagesList.PreviewMouseMove += StagesPreviewMouseMove;
+        StagesList.DragOver += StagesDragOver;
+        StagesList.Drop += StagesDrop;
+    }
+
+    // ---- drag & drop reordering of the processing chain ----
+    private void StagesPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        var handle = FindTagged(e.OriginalSource as DependencyObject, "draghandle");
+        _dragStage = (handle as FrameworkElement)?.DataContext as StageViewModel;
+        if (_dragStage != null) _dragStart = e.GetPosition(null);
+    }
+
+    private void StagesPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragStage == null || e.LeftButton != MouseButtonState.Pressed) return;
+        var p = e.GetPosition(null);
+        if (Math.Abs(p.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(p.Y - _dragStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+
+        var stage = _dragStage;
+        _dragStage = null;
+        DragDrop.DoDragDrop(StagesList, new DataObject("MicForgeStage", stage), DragDropEffects.Move);
+    }
+
+    private void StagesDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent("MicForgeStage") ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void StagesDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData("MicForgeStage") is not StageViewModel dragged) return;
+        var target = StageAt(e.GetPosition(StagesList));
+        if (target != null) _vm.MoveStage(dragged, target);
+    }
+
+    private StageViewModel StageAt(Point p)
+    {
+        var hit = StagesList.InputHitTest(p) as DependencyObject;
+        while (hit != null)
+        {
+            if (hit is FrameworkElement fe && fe.DataContext is StageViewModel s && _vm.Stages.Contains(s))
+                return s;
+            hit = VisualTreeHelper.GetParent(hit);
+        }
+        return null;
+    }
+
+    private static DependencyObject FindTagged(DependencyObject d, string tag)
+    {
+        while (d != null)
+        {
+            if (d is FrameworkElement fe && (fe.Tag as string) == tag) return d;
+            d = VisualTreeHelper.GetParent(d);
+        }
+        return null;
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

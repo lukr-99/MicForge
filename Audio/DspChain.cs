@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NAudio.Wave;
 
 namespace MicForge.Audio;
@@ -7,6 +8,7 @@ namespace MicForge.Audio;
 public sealed class DspChain
 {
     private readonly IAudioProcessor[] _chain;
+    private volatile IAudioProcessor[] _order;
 
     public GainStage InputGain { get; }
     public InputAgc InputAgc { get; }
@@ -54,6 +56,24 @@ public sealed class DspChain
         {
             InputGain, InputAgc, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
         };
+        _order = _chain;
+    }
+
+    public IReadOnlyList<IAudioProcessor> DefaultOrder => _chain;
+
+    /// <summary>Reorder the processing chain (must contain every processor exactly once).</summary>
+    public void SetOrder(IReadOnlyList<IAudioProcessor> processors)
+    {
+        if (processors == null || processors.Count != _chain.Length) return;
+        var arr = new IAudioProcessor[processors.Count];
+        for (int i = 0; i < arr.Length; i++) arr[i] = processors[i];
+        foreach (var p in _chain)
+        {
+            bool found = false;
+            foreach (var q in arr) if (ReferenceEquals(p, q)) { found = true; break; }
+            if (!found) return;   // incomplete set — ignore
+        }
+        _order = arr;
     }
 
     public void Process(float[] buffer, int offset, int count)
@@ -86,7 +106,8 @@ public sealed class DspChain
             return;
         }
 
-        foreach (var p in _chain) p.Process(buffer, offset, count);
+        var order = _order;
+        foreach (var p in order) p.Process(buffer, offset, count);
 
         if (Mute)
         {

@@ -35,6 +35,7 @@ public sealed class MainViewModel : ViewModelBase
         SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
         ClearHotkeyCommand = new RelayCommand(p => { if (p is HotkeyVm h) { h.Clear(); OnHotkeysChanged(); } });
         SetPttKeyCommand = new RelayCommand(BeginPttCapture);
+        ResetOrderCommand = new RelayCommand(ResetStageOrder);
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -53,6 +54,7 @@ public sealed class MainViewModel : ViewModelBase
         }
         SelectDefaults(saved);
         BuildStages();
+        ApplyStageOrder(saved?.StageOrder);
         BuildHotkeys(saved);
         if (_pttEnabled) ApplyPttState();
 
@@ -78,6 +80,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand SetHotkeyCommand { get; }
     public RelayCommand ClearHotkeyCommand { get; }
     public RelayCommand SetPttKeyCommand { get; }
+    public RelayCommand ResetOrderCommand { get; }
     public ObservableCollection<HotkeyVm> Hotkeys { get; } = new();
 
     public event Action HotkeysChanged;
@@ -627,6 +630,53 @@ public sealed class MainViewModel : ViewModelBase
         loud.Add("Max gain", 0, 18, 1, () => c.Loudness.MaxGainDb, v => c.Loudness.MaxGainDb = v, "0", " dB",
             "How much the auto-leveler may boost or cut to reach the target.");
         Stages.Add(loud);
+
+        // Map each card to its processor (built in the chain's default order).
+        var procs = new IAudioProcessor[]
+        {
+            c.InputGain, c.InputAgc, c.HighPass, c.Suppressor, c.Gate, c.Eq,
+            c.Compressor, c.DeEsser, c.Saturation, c.Limiter, c.OutputGain, c.Loudness
+        };
+        for (int i = 0; i < Stages.Count && i < procs.Length; i++) Stages[i].Processor = procs[i];
+    }
+
+    // ---- stage reordering (drag & drop changes the processing order) ----
+    public void MoveStage(StageViewModel dragged, StageViewModel target)
+    {
+        if (dragged == null || target == null || dragged == target) return;
+        int from = Stages.IndexOf(dragged), to = Stages.IndexOf(target);
+        if (from < 0 || to < 0) return;
+        Stages.Move(from, to);
+        RenumberAndApplyChain(save: true);
+    }
+
+    private void RenumberAndApplyChain(bool save)
+    {
+        for (int i = 0; i < Stages.Count; i++) Stages[i].Order = i + 1;
+        _engine.Chain.SetOrder(Stages.Select(s => s.Processor).Where(p => p != null).ToList());
+        if (save) SaveSettings();
+    }
+
+    private void ApplyStageOrder(List<string> order)
+    {
+        if (order != null && order.Count > 0)
+        {
+            var current = Stages.ToList();
+            Stages.Clear();
+            foreach (var id in order)
+            {
+                var s = current.FirstOrDefault(x => x.ProcessorId == id && !Stages.Contains(x));
+                if (s != null) Stages.Add(s);
+            }
+            foreach (var s in current) if (!Stages.Contains(s)) Stages.Add(s);
+        }
+        RenumberAndApplyChain(save: false);
+    }
+
+    private void ResetStageOrder()
+    {
+        BuildStages();
+        RenumberAndApplyChain(save: true);
     }
 
     // ---- device helpers ----
@@ -755,6 +805,7 @@ public sealed class MainViewModel : ViewModelBase
         s.AutoStartProcessing = AutoStartProcessing;
         s.StartMinimized = MinimizeToTray;
         s.VisualMode = VisualMode;
+        s.StageOrder = Stages.Select(x => x.ProcessorId).ToList();
         s.MonitorEnabled = MonitorEnabled;
         s.MonitorDeviceId = SelectedMonitorDevice?.ID;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
@@ -823,5 +874,6 @@ public sealed class MainViewModel : ViewModelBase
         s.ApplyTo(_engine.Chain);
         SelectDefaults(s);
         BuildStages();
+        ApplyStageOrder(s.StageOrder);
     }
 }

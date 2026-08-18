@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using MicForge.Audio;
 
 namespace MicForge.ViewModels;
 
@@ -53,6 +54,13 @@ public class StageViewModel : ViewModelBase
     public virtual bool IsCompressor => false;
     public bool IsGate { get; set; }
     public bool IsDeEsser { get; set; }
+
+    // The processor this card controls, and its position in the chain (for reordering).
+    public IAudioProcessor Processor { get; set; }
+    public string ProcessorId => Processor?.Name;
+
+    private int _order;
+    public int Order { get => _order; set => Set(ref _order, value); }
 
     public ObservableCollection<ParamViewModel> Params { get; } = new();
 
