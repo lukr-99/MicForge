@@ -31,6 +31,23 @@ public class StageViewModel : ViewModelBase
     public string ActionText { get; set; }
     public RelayCommand ActionCommand { get; set; }
 
+    // Optional secondary toggle (used by the gate for "smart/VAD" mode).
+    private Func<bool> _getExtra;
+    private Action<bool> _setExtra;
+    public bool HasExtraToggle { get; private set; }
+    public string ExtraToggleText { get; private set; }
+
+    public void SetExtraToggle(string text, Func<bool> get, Action<bool> set)
+    {
+        ExtraToggleText = text; _getExtra = get; _setExtra = set; HasExtraToggle = true;
+    }
+
+    public bool ExtraToggle
+    {
+        get => _getExtra != null && _getExtra();
+        set { _setExtra?.Invoke(value); OnPropertyChanged(); }
+    }
+
     // Which specialised visual (if any) this stage offers in Graph view.
     public virtual bool IsEq => false;
     public virtual bool IsCompressor => false;

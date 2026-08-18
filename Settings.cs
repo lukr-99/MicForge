@@ -34,6 +34,8 @@ public sealed class Settings
     public double GateHoldMs { get; set; } = 150;
     public double GateReleaseMs { get; set; } = 200;
     public double GateRangeDb { get; set; } = -70;
+    public bool GateUseVad { get; set; }
+    public double GateVadThreshold { get; set; } = 0.6;
 
     public bool EqEnabled { get; set; } = true;
     public List<EqBandSetting> EqBands { get; set; } = new();
@@ -89,6 +91,8 @@ public sealed class Settings
             GateHoldMs = c.Gate.HoldMs,
             GateReleaseMs = c.Gate.ReleaseMs,
             GateRangeDb = c.Gate.RangeDb,
+            GateUseVad = c.Gate.UseVad,
+            GateVadThreshold = c.Gate.VadThreshold,
             EqEnabled = c.Eq.Enabled,
             CompEnabled = c.Compressor.Enabled,
             CompThresholdDb = c.Compressor.ThresholdDb,
@@ -138,6 +142,8 @@ public sealed class Settings
         c.Gate.HoldMs = GateHoldMs;
         c.Gate.ReleaseMs = GateReleaseMs;
         c.Gate.RangeDb = GateRangeDb;
+        c.Gate.UseVad = GateUseVad;
+        c.Gate.VadThreshold = GateVadThreshold;
         c.Eq.Enabled = EqEnabled;
         c.Compressor.Enabled = CompEnabled;
         c.Compressor.ThresholdDb = CompThresholdDb;

@@ -298,6 +298,12 @@ public sealed class MainViewModel : ViewModelBase
         gate.ShowAction = true;
         gate.ActionText = "Learn noise floor";
         gate.ActionCommand = new RelayCommand(LearnNoise);
+        if (c.Suppressor.Available)
+        {
+            gate.SetExtraToggle("Smart — open on voice (RNNoise)", () => c.Gate.UseVad, v => c.Gate.UseVad = v);
+            gate.Add("Voice sens", 0.1, 0.9, 0.05, () => c.Gate.VadThreshold, v => c.Gate.VadThreshold = v, "0.00", "",
+                "How sure RNNoise must be that it's your voice before the smart gate opens.");
+        }
         Stages.Add(gate);
 
         var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
@@ -493,7 +499,7 @@ public sealed class MainViewModel : ViewModelBase
         var g = chain.Gate;
         GateThreshold = Norm(g.ThresholdDb, -80, 0);
         GateLevel = Norm(g.DetectorDb, -80, 0);
-        GateOpen = g.Enabled && g.DetectorDb >= g.ThresholdDb;
+        GateOpen = g.Enabled && g.IsOpen;
 
         var d = chain.DeEsser;
         DeEsserThreshold = Norm(d.ThresholdDb, -60, 0);

@@ -46,6 +46,8 @@ public sealed class DspChain
         OutputGain = new GainStage("Output Gain");
         Loudness = new LoudnessProcessor(sampleRate);
 
+        Gate.VadProvider = () => Suppressor.Available ? Suppressor.Vad : -1.0;
+
         _chain = new IAudioProcessor[]
         {
             InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
@@ -63,6 +65,8 @@ public sealed class DspChain
                 if (++_specPos == SpectrumSamples) _specPos = 0;
             }
         }
+
+        Suppressor.ProduceVad = Gate.UseVad;   // keep VAD current for the smart gate
 
         float ip = 0;
         for (int i = offset; i < offset + count; i++)

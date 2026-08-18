@@ -66,6 +66,13 @@
                             HorizontalAlignment="Left" Margin="0,10,0,0"
                             Visibility="{Binding ShowAction, Converter={StaticResource BoolToVis}}"/>
 
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
+                                Visibility="{Binding HasExtraToggle, Converter={StaticResource BoolToVis}}">
+                        <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding ExtraToggle}"/>
+                        <TextBlock Text="{Binding ExtraToggleText}" VerticalAlignment="Center" Margin="8,0,0,0"
+                                   FontSize="12" TextWrapping="Wrap" MaxWidth="200"/>
+                    </StackPanel>
+
                     <!-- EQ graph + spectrum (Graph view) -->
                     <ctrl:EqGraph Height="210" Margin="0,10,0,0" Model="{Binding}">
                         <ctrl:EqGraph.Visibility>

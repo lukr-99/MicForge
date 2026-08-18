@@ -45,6 +45,11 @@ public sealed class NoiseSuppressor : IAudioProcessor
     public bool Enabled { get; set; }
     public string LoadedPath { get; private set; }
 
+    /// <summary>Latest voice-activity probability (0..1) from RNNoise, for the smart gate.</summary>
+    public double Vad { get; private set; }
+    /// <summary>Keep running RNNoise for VAD even when suppression isn't applied.</summary>
+    public bool ProduceVad { get; set; }
+
     /// <summary>Load an rnnoise library from a name ("rnnoise") or a full .dll path.</summary>
     public bool TryLoad(string path)
     {
@@ -91,14 +96,15 @@ public sealed class NoiseSuppressor : IAudioProcessor
 
     public void Process(float[] buffer, int offset, int count)
     {
-        if (!Enabled || !Available) return;
+        if (!Available || (!Enabled && !ProduceVad)) return;
+        bool apply = Enabled;
 
         for (int i = offset; i < offset + count; i++)
         {
             _in[_fill++] = buffer[i] * Scale;
             if (_fill == Frame)
             {
-                _process(_state, _out, _in);
+                Vad = _process(_state, _out, _in);   // voice-activity probability
                 for (int j = 0; j < Frame; j++)
                 {
                     _fifo[_write] = _out[j] / Scale;
@@ -110,9 +116,10 @@ public sealed class NoiseSuppressor : IAudioProcessor
 
             if (_fifoCount > 0)
             {
-                buffer[i] = _fifo[_read];
+                float denoised = _fifo[_read];
                 _read = (_read + 1) % _fifo.Length;
                 _fifoCount--;
+                if (apply) buffer[i] = denoised;   // replace audio only when suppression is on
             }
         }
     }

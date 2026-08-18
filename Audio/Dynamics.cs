@@ -20,6 +20,12 @@ public sealed class NoiseGate : IAudioProcessor
     public double ReleaseMs { get; set; } = 200;
     public double RangeDb { get; set; } = -70;   // attenuation applied when fully closed
 
+    /// <summary>Open on RNNoise voice-activity instead of level.</summary>
+    public bool UseVad { get; set; }
+    public double VadThreshold { get; set; } = 0.6;
+    public Func<double> VadProvider;   // returns 0..1, or &lt; 0 when unavailable
+    public bool IsOpen => _env > 0.5;
+
     /// <summary>Current detector level in dB (for metering).</summary>
     public double DetectorDb { get; private set; } = -100;
     /// <summary>Current attenuation applied in dB, &lt;= 0 (for metering).</summary>
@@ -35,14 +41,16 @@ public sealed class NoiseGate : IAudioProcessor
         double rel = Math.Exp(-1.0 / (_sr * Math.Max(ReleaseMs, 0.01) / 1000.0));
         double detRel = Math.Exp(-1.0 / (_sr * 0.010)); // 10 ms detector smoothing
         double holdSamples = _sr * HoldMs / 1000.0;
+        double vad = (UseVad && VadProvider != null) ? VadProvider() : -1;
 
         for (int i = offset; i < offset + count; i++)
         {
             double x = Math.Abs(buffer[i]);
             _detect = x > _detect ? x : x + (_detect - x) * detRel;
 
+            bool open = vad >= 0 ? vad >= VadThreshold : _detect >= thr;
             double target;
-            if (_detect >= thr) { target = 1.0; _hold = holdSamples; }
+            if (open) { target = 1.0; _hold = holdSamples; }
             else if (_hold > 0) { target = 1.0; _hold -= 1; }
             else target = floor;
 
