@@ -23,6 +23,7 @@ public sealed class DspChain
     public volatile float InputPeak;
     public volatile float OutputPeak;
     public volatile bool Bypass;
+    public volatile bool Mute;
 
     public const int SpectrumSamples = 2048;
     private readonly float[] _spec = new float[SpectrumSamples];
@@ -71,17 +72,31 @@ public sealed class DspChain
         }
         InputPeak = ip;
 
-        if (Bypass) { OutputPeak = ip; CaptureOut(buffer, offset, count); return; }
+        if (Bypass)
+        {
+            if (Mute) { Array.Clear(buffer, offset, count); OutputPeak = 0; }
+            else OutputPeak = ip;
+            CaptureOut(buffer, offset, count);
+            return;
+        }
 
         foreach (var p in _chain) p.Process(buffer, offset, count);
 
-        float op = 0;
-        for (int i = offset; i < offset + count; i++)
+        if (Mute)
         {
-            float a = Math.Abs(buffer[i]);
-            if (a > op) op = a;
+            Array.Clear(buffer, offset, count);
+            OutputPeak = 0;
         }
-        OutputPeak = op;
+        else
+        {
+            float op = 0;
+            for (int i = offset; i < offset + count; i++)
+            {
+                float a = Math.Abs(buffer[i]);
+                if (a > op) op = a;
+            }
+            OutputPeak = op;
+        }
         CaptureOut(buffer, offset, count);
     }
 

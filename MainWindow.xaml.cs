@@ -15,6 +15,8 @@ public partial class MainWindow : Window
     private WinForms.ToolStripMenuItem _startupItem;
     private bool _exiting;
     private bool _shownBalloon;
+    private GlobalHotkeys _hotkeys;
+    private WinForms.ToolStripMenuItem _muteItem, _bypassItem;
 
     public MainWindow()
     {
@@ -24,6 +26,7 @@ public partial class MainWindow : Window
 
         _vm.ExitRequested += ExitApp;
         _vm.ShowRequested += ShowFromTray;
+        _vm.HotkeysChanged += RegisterHotkeys;
 
         SetupTray();
         try { Icon = IconFactory.CreateImageSource(); } catch { }
@@ -48,6 +51,32 @@ public partial class MainWindow : Window
                 DwmSetWindowAttribute(hwnd, 19, ref on, sizeof(int));
         }
         catch { }
+
+        try
+        {
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            HwndSource.FromHwnd(handle)?.AddHook(WndProc);
+            _hotkeys = new GlobalHotkeys(handle);
+            RegisterHotkeys();
+        }
+        catch { }
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (_hotkeys != null && _hotkeys.TryHandle(msg, wParam)) handled = true;
+        return IntPtr.Zero;
+    }
+
+    private void RegisterHotkeys()
+    {
+        if (_hotkeys == null) return;
+        _hotkeys.UnregisterAll();
+        if (!_vm.GlobalHotkeysEnabled) return;
+
+        uint mod = GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt;
+        _hotkeys.Register(mod, 0x4D, () => _vm.ToggleMuteCommand.Execute(null));    // Ctrl+Alt+M
+        _hotkeys.Register(mod, 0x42, () => _vm.ToggleBypassCommand.Execute(null));  // Ctrl+Alt+B
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -80,6 +109,7 @@ public partial class MainWindow : Window
     private void ExitApp()
     {
         _exiting = true;
+        _hotkeys?.Dispose();
         _vm.Shutdown();
         _tray?.Dispose();
         Application.Current.Shutdown();
@@ -119,6 +149,13 @@ public partial class MainWindow : Window
         var menu = new WinForms.ContextMenuStrip();
         menu.Items.Add("Open MicForge", null, (_, _) => ShowFromTray());
         menu.Items.Add("Start / Stop", null, (_, _) => _vm.StartStopCommand.Execute(null));
+
+        _muteItem = new WinForms.ToolStripMenuItem("Mute", null, (_, _) => _vm.ToggleMuteCommand.Execute(null));
+        _bypassItem = new WinForms.ToolStripMenuItem("Bypass", null, (_, _) => _vm.ToggleBypassCommand.Execute(null));
+        menu.Items.Add(_muteItem);
+        menu.Items.Add(_bypassItem);
+        menu.Opening += (_, _) => { _muteItem.Checked = _vm.Muted; _bypassItem.Checked = _vm.Bypassed; };
+
         menu.Items.Add(new WinForms.ToolStripSeparator());
 
         _startupItem = new WinForms.ToolStripMenuItem("Start with Windows")

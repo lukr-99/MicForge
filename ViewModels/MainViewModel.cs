@@ -30,6 +30,7 @@ public sealed class MainViewModel : ViewModelBase
         ShowProcessorCommand = new RelayCommand(() => SetPage("processor"));
         ShowSettingsCommand = new RelayCommand(() => SetPage("settings"));
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
+        ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -40,6 +41,7 @@ public sealed class MainViewModel : ViewModelBase
             _minimizeToTray = saved.StartMinimized;
             _visualMode = saved.VisualMode;
             _monitorEnabled = saved.MonitorEnabled;
+            _globalHotkeys = saved.GlobalHotkeysEnabled;
         }
         SelectDefaults(saved);
         BuildStages();
@@ -61,6 +63,9 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowProcessorCommand { get; }
     public RelayCommand ShowSettingsCommand { get; }
     public RelayCommand ToggleBypassCommand { get; }
+    public RelayCommand ToggleMuteCommand { get; }
+
+    public event Action HotkeysChanged;
 
     // ---- navigation ----
     private string _page = "processor";
@@ -169,6 +174,38 @@ public sealed class MainViewModel : ViewModelBase
         set { if (Set(ref _bypassed, value)) _engine.Chain.Bypass = value; }
     }
 
+    private bool _muted;
+    public bool Muted
+    {
+        get => _muted;
+        set { if (Set(ref _muted, value)) _engine.Chain.Mute = value; }
+    }
+
+    private bool _globalHotkeys;
+    public bool GlobalHotkeysEnabled
+    {
+        get => _globalHotkeys;
+        set { if (Set(ref _globalHotkeys, value)) HotkeysChanged?.Invoke(); }
+    }
+
+    // Gate noise-floor learning.
+    private bool _learning;
+    private DateTime _learnEnd;
+    private double _learnMaxDb;
+
+    private void LearnNoise()
+    {
+        if (!(_engine.Running || _engine.Reconnecting))
+        {
+            MessageBox.Show("Start processing first, then stay quiet for a moment while MicForge samples the room.",
+                "Learn noise floor");
+            return;
+        }
+        _learnMaxDb = -120;
+        _learnEnd = DateTime.UtcNow.AddMilliseconds(1200);
+        _learning = true;
+    }
+
     public string[] PresetNames => BuiltInPresets.Names;
 
     private string _selectedPresetName;
@@ -233,8 +270,9 @@ public sealed class MainViewModel : ViewModelBase
         {
             ns.ToggleEnabled = false;
             ns.Note = "Needs a 64-bit rnnoise.dll. Load one you downloaded or built, or drop it next to MicForge.exe.";
-            ns.ShowLoadButton = true;
-            ns.LoadCommand = new RelayCommand(BrowseRnnoise);
+            ns.ShowAction = true;
+            ns.ActionText = "Load rnnoise.dll…";
+            ns.ActionCommand = new RelayCommand(BrowseRnnoise);
         }
         else
         {
@@ -257,6 +295,9 @@ public sealed class MainViewModel : ViewModelBase
         gate.Add("Range", -90, 0, 2, () => c.Gate.RangeDb, v => c.Gate.RangeDb = v, "0", " dB",
             "How much the signal is attenuated while the gate is closed. More negative = more complete silence.");
         gate.IsGate = true;
+        gate.ShowAction = true;
+        gate.ActionText = "Learn noise floor";
+        gate.ActionCommand = new RelayCommand(LearnNoise);
         Stages.Add(gate);
 
         var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
@@ -427,6 +468,21 @@ public sealed class MainViewModel : ViewModelBase
         InClip = (now - _inClipT).TotalMilliseconds < 1200;
         OutClip = (now - _outClipT).TotalMilliseconds < 1200;
 
+        if (_learning)
+        {
+            double db = ip <= 0.00001f ? -120 : 20 * Math.Log10(ip);
+            if (db > _learnMaxDb) _learnMaxDb = db;
+            if (now >= _learnEnd)
+            {
+                _learning = false;
+                var gt = chain.Gate;
+                gt.ThresholdDb = Math.Clamp(_learnMaxDb + 5, -80, 0);
+                gt.Enabled = true;
+                BuildStages();
+            }
+            else StatusText = "Sampling room…";
+        }
+
         var comp = chain.Compressor;
         GrText = $"{comp.GainReductionDb:0.0} dB";
         CompGrDb = comp.GainReductionDb;
@@ -466,6 +522,7 @@ public sealed class MainViewModel : ViewModelBase
         s.VisualMode = VisualMode;
         s.MonitorEnabled = MonitorEnabled;
         s.MonitorDeviceId = SelectedMonitorDevice?.ID;
+        s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
         return s;
     }
 

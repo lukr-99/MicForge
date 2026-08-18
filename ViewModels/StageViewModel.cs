@@ -27,9 +27,9 @@ public class StageViewModel : ViewModelBase
     public string Info { get; set; }                  // long "what this does" text for the info button
 
     // Optional action button (used by Noise Suppression to load an rnnoise.dll).
-    public bool ShowLoadButton { get; set; }
-    public string LoadButtonText { get; set; } = "Load rnnoise.dll…";
-    public RelayCommand LoadCommand { get; set; }
+    public bool ShowAction { get; set; }
+    public string ActionText { get; set; }
+    public RelayCommand ActionCommand { get; set; }
 
     // Which specialised visual (if any) this stage offers in Graph view.
     public virtual bool IsEq => false;

@@ -62,9 +62,9 @@
                                Foreground="{StaticResource TextMutedBrush}"
                                Visibility="{Binding Note, Converter={StaticResource EmptyToCollapsed}}"/>
 
-                    <Button Content="{Binding LoadButtonText}" Command="{Binding LoadCommand}"
+                    <Button Content="{Binding ActionText}" Command="{Binding ActionCommand}"
                             HorizontalAlignment="Left" Margin="0,10,0,0"
-                            Visibility="{Binding ShowLoadButton, Converter={StaticResource BoolToVis}}"/>
+                            Visibility="{Binding ShowAction, Converter={StaticResource BoolToVis}}"/>
 
                     <!-- EQ graph + spectrum (Graph view) -->
                     <ctrl:EqGraph Height="210" Margin="0,10,0,0" Model="{Binding}">
@@ -295,6 +295,8 @@
                         </StackPanel>
                         <ToggleButton Style="{StaticResource BypassToggle}" Content="Bypass" Margin="24,0,0,0"
                                       IsChecked="{Binding Bypassed}" ToolTip="Bypass all processing (Ctrl+B)"/>
+                        <ToggleButton Style="{StaticResource MuteToggle}" Content="Mute" Margin="8,0,0,0"
+                                      IsChecked="{Binding Muted}" ToolTip="Mute the output"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <TextBlock Text="Preset" VerticalAlignment="Center" Margin="0,0,8,0"
@@ -425,6 +427,30 @@
                             <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
                                       IsChecked="{Binding MinimizeToTray}"/>
                         </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Shortcuts" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Global hotkeys"/>
+                                <TextBlock Text="System-wide shortcuts that work even when MicForge isn't focused (e.g. while gaming)."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding GlobalHotkeysEnabled}"/>
+                        </Grid>
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="Mute:  Ctrl + Alt + M" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock Text="Bypass:  Ctrl + Alt + B" FontSize="12" Margin="0,4,0,0"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

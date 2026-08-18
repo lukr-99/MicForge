@@ -72,6 +72,7 @@ public sealed class Settings
     public bool VisualMode { get; set; }
     public bool MonitorEnabled { get; set; }
     public string MonitorDeviceId { get; set; }
+    public bool GlobalHotkeysEnabled { get; set; }
 
     public static Settings CaptureFrom(DspChain c)
     {
