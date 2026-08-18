@@ -32,6 +32,8 @@ public sealed class MainViewModel : ViewModelBase
         ShowShortcutsCommand = new RelayCommand(() => SetPage("shortcuts"));
         ShowCraftingCommand = new RelayCommand(() => SetPage("crafting"));
         ResetCraftingCommand = new RelayCommand(ResetCrafting);
+        UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
+        RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
         SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
@@ -66,6 +68,11 @@ public sealed class MainViewModel : ViewModelBase
         _meterTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(33) };
         _meterTimer.Tick += (_, _) => UpdateMeters();
         _meterTimer.Start();
+
+        _histLast = Snapshot().ToJson();
+        _histTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+        _histTimer.Tick += (_, _) => CaptureHistory();
+        _histTimer.Start();
     }
 
     // ---- commands ----
@@ -82,6 +89,8 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowShortcutsCommand { get; }
     public RelayCommand ShowCraftingCommand { get; }
     public RelayCommand ResetCraftingCommand { get; }
+    public RelayCommand UndoCommand { get; }
+    public RelayCommand RedoCommand { get; }
     public RelayCommand SetHotkeyCommand { get; }
     public RelayCommand ClearHotkeyCommand { get; }
     public RelayCommand SetPttKeyCommand { get; }
@@ -847,17 +856,21 @@ public sealed class MainViewModel : ViewModelBase
 
     private void RestoreCrafting(Settings saved)
     {
+        if (SetCraftStates(saved)) ApplyCrafting();
+    }
+
+    /// <summary>Set card states from settings without touching the chain. Returns true if any are on.</summary>
+    private bool SetCraftStates(Settings saved)
+    {
         BuildCraftCards();
-        if (saved?.CraftCards == null) return;
         bool any = false;
-        foreach (var st in saved.CraftCards)
+        foreach (var card in CraftCards)
         {
-            var card = CraftCards.FirstOrDefault(x => x.Id == st.Id);
-            if (card == null) continue;
-            card.SetSilently(st.Enabled, st.Intensity);
-            if (st.Enabled) any = true;
+            var st = saved?.CraftCards?.FirstOrDefault(x => x.Id == card.Id);
+            card.SetSilently(st?.Enabled ?? false, st?.Intensity ?? card.Intensity);
+            if (st?.Enabled == true) any = true;
         }
-        if (any) ApplyCrafting();
+        return any;
     }
 
     /// <summary>Re-read every param slider from the model (after crafting changes values under it).</summary>
@@ -865,6 +878,72 @@ public sealed class MainViewModel : ViewModelBase
     {
         foreach (var s in Stages)
             foreach (var p in s.Params) p.NotifyChanged();
+    }
+
+    // ---- undo / redo (coalesced snapshots of the whole chain) ----
+    private readonly Stack<string> _undo = new();
+    private readonly Stack<string> _redo = new();
+    private string _histLast;
+    private bool _applyingHistory;
+    private DispatcherTimer _histTimer;
+
+    /// <summary>Every tick, if the chain changed since the last checkpoint, push the old state.</summary>
+    private void CaptureHistory()
+    {
+        if (_applyingHistory) return;
+        string cur;
+        try { cur = Snapshot().ToJson(); } catch { return; }
+        if (_histLast == null) { _histLast = cur; return; }
+        if (cur == _histLast) return;
+
+        _undo.Push(_histLast);
+        if (_undo.Count > 60)
+        {
+            var keep = _undo.ToArray();               // newest-first
+            _undo.Clear();
+            for (int i = 59; i >= 0; i--) _undo.Push(keep[i]);
+        }
+        _redo.Clear();
+        _histLast = cur;
+    }
+
+    private void Undo()
+    {
+        if (_undo.Count == 0) return;
+        _applyingHistory = true;
+        try
+        {
+            _redo.Push(Snapshot().ToJson());
+            var prev = _undo.Pop();
+            ApplyHistory(prev);
+            _histLast = prev;
+        }
+        finally { _applyingHistory = false; }
+    }
+
+    private void Redo()
+    {
+        if (_redo.Count == 0) return;
+        _applyingHistory = true;
+        try
+        {
+            _undo.Push(Snapshot().ToJson());
+            var next = _redo.Pop();
+            ApplyHistory(next);
+            _histLast = next;
+        }
+        finally { _applyingHistory = false; }
+    }
+
+    private void ApplyHistory(string json)
+    {
+        var s = Settings.FromJson(json);
+        if (s == null) return;
+        s.ApplyTo(_engine.Chain);
+        SetCraftStates(s);
+        BuildStages();
+        ApplyStageOrder(s.StageOrder);
+        SaveSettings();
     }
 
     // ---- device helpers ----
@@ -1043,6 +1122,7 @@ public sealed class MainViewModel : ViewModelBase
     public void Shutdown()
     {
         _meterTimer?.Stop();
+        _histTimer?.Stop();
         SaveSettings();
         _engine.Dispose();
     }
@@ -1093,5 +1173,7 @@ public sealed class MainViewModel : ViewModelBase
         SelectDefaults(s);
         BuildStages();
         ApplyStageOrder(s.StageOrder);
+        RestoreCrafting(s);
+        _histLast = Snapshot().ToJson();
     }
 }

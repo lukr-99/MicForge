@@ -285,10 +285,14 @@ public sealed class Settings
         return path;
     }
 
-    public void Save(string path)
+    public void Save(string path) => File.WriteAllText(path, ToJson());
+
+    public string ToJson() => JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+
+    public static Settings FromJson(string json)
     {
-        var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(path, json);
+        try { return JsonSerializer.Deserialize<Settings>(json); }
+        catch { return null; }
     }
 
     public static Settings Load(string path)
