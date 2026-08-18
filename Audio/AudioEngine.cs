@@ -27,7 +27,7 @@ public sealed class AudioEngine : IDisposable
     private TeeSampleProvider _tee;
     private BufferedWaveProvider _monBuffer;
     private WasapiOut _monitor;
-    private MMDevice _monDevice;
+    private string _monId, _monName;
     private bool _monEnabled;
 
     // Reconnect state.
@@ -41,8 +41,21 @@ public sealed class AudioEngine : IDisposable
     public volatile bool Running;
     public volatile bool Reconnecting;
 
-    public static List<MMDevice> InputDevices() => Enumerate(DataFlow.Capture);
-    public static List<MMDevice> OutputDevices() => Enumerate(DataFlow.Render);
+    // Public lists for the UI: lightweight POCOs whose names are read once here, so
+    // binding a ComboBox to them never re-queries COM (the source of the picker lag).
+    public static List<DeviceInfo> InputDevices() => ToInfo(Enumerate(DataFlow.Capture));
+    public static List<DeviceInfo> OutputDevices() => ToInfo(Enumerate(DataFlow.Render));
+
+    private static List<DeviceInfo> ToInfo(List<MMDevice> devs)
+    {
+        var list = new List<DeviceInfo>(devs.Count);
+        foreach (var d in devs)
+        {
+            list.Add(new DeviceInfo(d.ID, d.FriendlyName));
+            d.Dispose();
+        }
+        return list;
+    }
 
     private static List<MMDevice> Enumerate(DataFlow flow)
     {
@@ -64,16 +77,20 @@ public sealed class AudioEngine : IDisposable
         catch { return null; }
     }
 
-    public void Start(MMDevice input, MMDevice output)
+    public void Start(DeviceInfo input, DeviceInfo output)
     {
         lock (_lock)
         {
             _userStopped = false;
             _recovering = false;
-            _inId = input.ID; _inName = input.FriendlyName;
-            _outId = output.ID; _outName = output.FriendlyName;
+            var inDev = Resolve(Enumerate(DataFlow.Capture), input?.Id, input?.Name);
+            var outDev = Resolve(Enumerate(DataFlow.Render), output?.Id, output?.Name);
+            if (inDev == null || outDev == null)
+                throw new InvalidOperationException("The selected audio device is no longer available.");
+            _inId = inDev.ID; _inName = inDev.FriendlyName;
+            _outId = outDev.ID; _outName = outDev.FriendlyName;
             StopStreams();
-            StartCore(input, output);
+            StartCore(inDev, outDev);
         }
     }
 
@@ -173,8 +190,8 @@ public sealed class AudioEngine : IDisposable
         {
             if (_userStopped || Running) { _recoveryTimer.Stop(); return; }
 
-            var inDev = Resolve(InputDevices(), _inId, _inName);
-            var outDev = Resolve(OutputDevices(), _outId, _outName);
+            var inDev = Resolve(Enumerate(DataFlow.Capture), _inId, _inName);
+            var outDev = Resolve(Enumerate(DataFlow.Render), _outId, _outName);
             if (inDev == null || outDev == null) return;   // devices not back yet; keep waiting
 
             StopStreams();
@@ -193,9 +210,10 @@ public sealed class AudioEngine : IDisposable
 
     // ---- monitor ----
 
-    public void ConfigureMonitor(MMDevice device, bool enabled)
+    public void ConfigureMonitor(DeviceInfo device, bool enabled)
     {
-        _monDevice = device;
+        _monId = device?.Id;
+        _monName = device?.Name;
         _monEnabled = enabled;
         lock (_lock) { if (Running) ApplyMonitor(); }
     }
@@ -205,11 +223,11 @@ public sealed class AudioEngine : IDisposable
         StopMonitorOutput();
         if (_tee == null) return;
 
-        if (_monEnabled && _monDevice != null)
+        if (_monEnabled && !string.IsNullOrEmpty(_monId))
         {
             _monBuffer.ClearBuffer();
             _tee.Active = true;
-            try { StartMonitorOutput(_monDevice); }
+            try { StartMonitorOutput(); }
             catch { _tee.Active = false; StopMonitorOutput(); }
         }
         else
@@ -218,8 +236,10 @@ public sealed class AudioEngine : IDisposable
         }
     }
 
-    private void StartMonitorOutput(MMDevice device)
+    private void StartMonitorOutput()
     {
+        var device = Resolve(Enumerate(DataFlow.Render), _monId, _monName);
+        if (device == null) return;
         var mix = device.AudioClient.MixFormat;
         ISampleProvider mp = _monBuffer.ToSampleProvider();
         if (mix.SampleRate != SampleRate)

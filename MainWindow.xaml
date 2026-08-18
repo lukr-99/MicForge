@@ -252,7 +252,7 @@
                             </Border>
                             <ComboBox Width="230" Margin="0,0,18,0" ItemsSource="{Binding Inputs}"
                                       SelectedItem="{Binding SelectedInput}"
-                                      DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
+                                      DisplayMemberPath="Name" IsEnabled="{Binding NotRunning}"/>
                             <Border Style="{StaticResource FieldBadge}" ToolTip="Output — virtual mic (CABLE Input)">
                                 <TextBlock Text="OUT" FontSize="11" FontWeight="SemiBold" Margin="10,0"
                                            Foreground="{StaticResource TextMutedBrush}"
@@ -260,7 +260,7 @@
                             </Border>
                             <ComboBox Width="230" Margin="0,0,10,0" ItemsSource="{Binding Outputs}"
                                       SelectedItem="{Binding SelectedOutput}"
-                                      DisplayMemberPath="FriendlyName" IsEnabled="{Binding NotRunning}"/>
+                                      DisplayMemberPath="Name" IsEnabled="{Binding NotRunning}"/>
                             <Button Style="{StaticResource IconButton}" Content="⟳" FontSize="18"
                                     Width="36" Height="36" VerticalAlignment="Center"
                                     Command="{Binding RefreshCommand}" ToolTip="Refresh device list"/>
@@ -481,7 +481,7 @@
                                            Foreground="{StaticResource TextMutedBrush}"/>
                                 <ComboBox Width="320" HorizontalAlignment="Left"
                                           ItemsSource="{Binding Outputs}" SelectedItem="{Binding SelectedMonitorDevice}"
-                                          DisplayMemberPath="FriendlyName"/>
+                                          DisplayMemberPath="Name"/>
                             </StackPanel>
                             <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Bottom"
                                       Margin="0,0,0,7" IsChecked="{Binding MonitorEnabled}"/>

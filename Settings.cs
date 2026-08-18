@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -202,6 +203,29 @@ public sealed class Settings
             dst.Q = src.Q;
         }
         c.Eq.UpdateAll();
+    }
+
+    /// <summary>
+    /// Where settings live: <c>%AppData%\MicForge\micforge.json</c>. Kept out of the install
+    /// folder so it survives uninstall / reinstall / update. On first use, migrates an existing
+    /// file from the old next-to-exe location.
+    /// </summary>
+    public static string DefaultPath()
+    {
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MicForge");
+        try { Directory.CreateDirectory(dir); } catch { }
+        var path = Path.Combine(dir, "micforge.json");
+
+        if (!File.Exists(path))
+        {
+            var legacy = Path.Combine(AppContext.BaseDirectory, "micforge.json");
+            if (File.Exists(legacy))
+            {
+                try { File.Copy(legacy, path); } catch { }
+            }
+        }
+        return path;
     }
 
     public void Save(string path)

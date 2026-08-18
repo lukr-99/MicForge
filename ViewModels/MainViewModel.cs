@@ -13,7 +13,7 @@ namespace MicForge.ViewModels;
 public sealed class MainViewModel : ViewModelBase
 {
     private readonly AudioEngine _engine = new();
-    private readonly string _settingsPath = Path.Combine(AppContext.BaseDirectory, "micforge.json");
+    private readonly string _settingsPath = Settings.DefaultPath();
     private readonly DispatcherTimer _meterTimer;
 
     public event Action ExitRequested;
@@ -219,14 +219,14 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     // ---- devices ----
-    public List<MMDevice> Inputs { get; private set; } = new();
-    public List<MMDevice> Outputs { get; private set; } = new();
+    public List<DeviceInfo> Inputs { get; private set; } = new();
+    public List<DeviceInfo> Outputs { get; private set; } = new();
 
-    private MMDevice _selectedInput;
-    public MMDevice SelectedInput { get => _selectedInput; set => Set(ref _selectedInput, value); }
+    private DeviceInfo _selectedInput;
+    public DeviceInfo SelectedInput { get => _selectedInput; set => Set(ref _selectedInput, value); }
 
-    private MMDevice _selectedOutput;
-    public MMDevice SelectedOutput { get => _selectedOutput; set => Set(ref _selectedOutput, value); }
+    private DeviceInfo _selectedOutput;
+    public DeviceInfo SelectedOutput { get => _selectedOutput; set => Set(ref _selectedOutput, value); }
 
     // ---- run state (polled from the engine each meter tick) ----
     private bool _isRunning;
@@ -444,8 +444,8 @@ public sealed class MainViewModel : ViewModelBase
         set { if (Set(ref _monitorEnabled, value)) ApplyMonitor(); }
     }
 
-    private MMDevice _selectedMonitorDevice;
-    public MMDevice SelectedMonitorDevice
+    private DeviceInfo _selectedMonitorDevice;
+    public DeviceInfo SelectedMonitorDevice
     {
         get => _selectedMonitorDevice;
         set { if (Set(ref _selectedMonitorDevice, value)) ApplyMonitor(); }
@@ -453,7 +453,7 @@ public sealed class MainViewModel : ViewModelBase
 
     private void ApplyMonitor() => _engine.ConfigureMonitor(_selectedMonitorDevice, _monitorEnabled);
 
-    public string VersionText => "MicForge · v1.0.0 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.0.1 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
@@ -707,17 +707,17 @@ public sealed class MainViewModel : ViewModelBase
 
     private void SelectDefaults(Settings saved)
     {
-        SelectedInput = Inputs.FirstOrDefault(d => d.ID == saved?.InputDeviceId)
-                        ?? Inputs.FirstOrDefault(d => d.ID == AudioEngine.DefaultInputId())
+        SelectedInput = Inputs.FirstOrDefault(d => d.Id == saved?.InputDeviceId)
+                        ?? Inputs.FirstOrDefault(d => d.Id == AudioEngine.DefaultInputId())
                         ?? Inputs.FirstOrDefault();
 
-        SelectedOutput = Outputs.FirstOrDefault(d => d.ID == saved?.OutputDeviceId)
+        SelectedOutput = Outputs.FirstOrDefault(d => d.Id == saved?.OutputDeviceId)
                          ?? Outputs.FirstOrDefault(d =>
-                             d.FriendlyName.IndexOf("CABLE Input", StringComparison.OrdinalIgnoreCase) >= 0)
+                             d.Name.IndexOf("CABLE Input", StringComparison.OrdinalIgnoreCase) >= 0)
                          ?? Outputs.FirstOrDefault();
 
-        SelectedMonitorDevice = Outputs.FirstOrDefault(d => d.ID == saved?.MonitorDeviceId)
-                                ?? Outputs.FirstOrDefault(d => d.ID == AudioEngine.DefaultOutputId())
+        SelectedMonitorDevice = Outputs.FirstOrDefault(d => d.Id == saved?.MonitorDeviceId)
+                                ?? Outputs.FirstOrDefault(d => d.Id == AudioEngine.DefaultOutputId())
                                 ?? Outputs.FirstOrDefault();
     }
 
@@ -817,14 +817,14 @@ public sealed class MainViewModel : ViewModelBase
     private Settings Snapshot()
     {
         var s = Settings.CaptureFrom(_engine.Chain);
-        s.InputDeviceId = SelectedInput?.ID;
-        s.OutputDeviceId = SelectedOutput?.ID;
+        s.InputDeviceId = SelectedInput?.Id;
+        s.OutputDeviceId = SelectedOutput?.Id;
         s.AutoStartProcessing = AutoStartProcessing;
         s.StartMinimized = MinimizeToTray;
         s.VisualMode = VisualMode;
         s.StageOrder = Stages.Select(x => x.ProcessorId).ToList();
         s.MonitorEnabled = MonitorEnabled;
-        s.MonitorDeviceId = SelectedMonitorDevice?.ID;
+        s.MonitorDeviceId = SelectedMonitorDevice?.Id;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
         s.ShowMuteOverlay = ShowMuteOverlay;
         s.PttEnabled = PttEnabled;

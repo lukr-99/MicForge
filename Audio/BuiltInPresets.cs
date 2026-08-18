@@ -63,13 +63,16 @@ public static class BuiltInPresets
                 break;
 
             case "Gaming Clarity":
-                c.Suppressor.Enabled = c.Suppressor.Available;
-                hp.Frequency = 100;
+                // RNNoise made voices sound hollow/"in a tube" — rely on the fast gate instead.
+                c.Suppressor.Enabled = false;
+                hp.Frequency = 105;
                 g.ThresholdDb = -38; g.AttackMs = 2; g.HoldMs = 80; g.ReleaseMs = 100; g.RangeDb = -85;
-                Band(eq, 0, 120, -1, 0.707); Band(eq, 1, 400, -2, 1.2); Band(eq, 2, 2500, 2.5, 1.0);
-                Band(eq, 3, 6000, 3.5, 1.0); Band(eq, 4, 12000, 2, 0.707);
-                comp.ThresholdDb = -16; comp.Ratio = 4; comp.AttackMs = 5; comp.ReleaseMs = 90; comp.KneeDb = 4; comp.MakeupDb = 5;
-                de.Frequency = 7000; de.ThresholdDb = -30; de.Ratio = 5;
+                // Less bass (deeper low-shelf cut + higher HP), a gentle 1.8 kHz lift to fill the
+                // midrange so it isn't hollow, and a softer presence peak moved down from 6 kHz.
+                Band(eq, 0, 150, -3, 0.707); Band(eq, 1, 450, -1.5, 1.0); Band(eq, 2, 1800, 1, 0.8);
+                Band(eq, 3, 4500, 2.5, 0.9); Band(eq, 4, 10000, 1.5, 0.707);
+                comp.ThresholdDb = -16; comp.Ratio = 3.5; comp.AttackMs = 5; comp.ReleaseMs = 90; comp.KneeDb = 4; comp.MakeupDb = 4;
+                de.Frequency = 7000; de.ThresholdDb = -30; de.Ratio = 4;
                 c.OutputGain.GainDb = 1.5;
                 break;
 
