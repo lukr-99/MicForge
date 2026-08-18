@@ -31,7 +31,9 @@ public sealed class MainViewModel : ViewModelBase
         ShowSettingsCommand = new RelayCommand(() => SetPage("settings"));
         ShowShortcutsCommand = new RelayCommand(() => SetPage("shortcuts"));
         ShowCraftingCommand = new RelayCommand(() => SetPage("crafting"));
+        ShowMetersCommand = new RelayCommand(() => SetPage("meters"));
         ResetCraftingCommand = new RelayCommand(ResetCrafting);
+        ResetLoudnessCommand = new RelayCommand(() => _engine.Chain.Loudness.ResetMeasurement());
         UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
         RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
         OpenLogsCommand = new RelayCommand(OpenLogs);
@@ -91,7 +93,9 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ToggleMuteCommand { get; }
     public RelayCommand ShowShortcutsCommand { get; }
     public RelayCommand ShowCraftingCommand { get; }
+    public RelayCommand ShowMetersCommand { get; }
     public RelayCommand ResetCraftingCommand { get; }
+    public RelayCommand ResetLoudnessCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand RedoCommand { get; }
     public RelayCommand OpenLogsCommand { get; }
@@ -110,6 +114,7 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsSettingsPage => _page == "settings";
     public bool IsShortcutsPage => _page == "shortcuts";
     public bool IsCraftingPage => _page == "crafting";
+    public bool IsMetersPage => _page == "meters";
     private void SetPage(string p)
     {
         _page = p;
@@ -117,6 +122,7 @@ public sealed class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSettingsPage));
         OnPropertyChanged(nameof(IsShortcutsPage));
         OnPropertyChanged(nameof(IsCraftingPage));
+        OnPropertyChanged(nameof(IsMetersPage));
     }
 
     // ---- hotkeys ----
@@ -503,6 +509,13 @@ public sealed class MainViewModel : ViewModelBase
 
     private string _glitchText = "0";
     public string GlitchText { get => _glitchText; private set => Set(ref _glitchText, value); }
+
+    // ---- loudness suite (Meters page) ----
+    private string _momLufsText = "—", _intLufsText = "—", _lraText = "—", _truePeakText = "—";
+    public string MomentaryLufsText { get => _momLufsText; private set => Set(ref _momLufsText, value); }
+    public string IntegratedLufsText { get => _intLufsText; private set => Set(ref _intLufsText, value); }
+    public string LraText { get => _lraText; private set => Set(ref _lraText, value); }
+    public string TruePeakText { get => _truePeakText; private set => Set(ref _truePeakText, value); }
 
     private void ApplyFollowDefault()
     {
@@ -1116,8 +1129,13 @@ public sealed class MainViewModel : ViewModelBase
         GrText = $"{comp.GainReductionDb:0.0} dB";
         CompGrDb = comp.GainReductionDb;
 
-        double lufs = chain.Loudness.ShortTermLufs;
+        var loud = chain.Loudness;
+        double lufs = loud.ShortTermLufs;
         LufsText = lufs <= -60 ? "—" : $"{lufs:0.0}";
+        MomentaryLufsText = loud.MomentaryLufs <= -60 ? "—" : $"{loud.MomentaryLufs:0.0}";
+        IntegratedLufsText = loud.IntegratedLufs <= -60 ? "—" : $"{loud.IntegratedLufs:0.0}";
+        LraText = $"{loud.LoudnessRange:0.0}";
+        TruePeakText = loud.TruePeakDb <= -60 ? "—" : $"{loud.TruePeakDb:+0.0;-0.0;0.0}";
 
         DspLoadText = (running && !recon) ? $"{chain.DspLoad * 100:0} %" : "—";
         GlitchText = _engine.Glitches.ToString();
