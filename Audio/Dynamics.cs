@@ -211,6 +211,9 @@ public sealed class Limiter : IAudioProcessor
     public double ReleaseMs { get; set; } = 60;
     public double LookaheadMs { get; set; } = 2.0;
 
+    /// <summary>Most recent gain reduction in dB, &gt;= 0 (for metering).</summary>
+    public double GainReductionDb { get; private set; }
+
     private void EnsureDelay()
     {
         int n = Math.Max(1, (int)(_sr * LookaheadMs / 1000.0));
@@ -219,13 +222,14 @@ public sealed class Limiter : IAudioProcessor
 
     public void Process(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
+        if (!Enabled) { GainReductionDb = 0; return; }
         EnsureDelay();
 
         double ceil = Math.Pow(10, CeilingDb / 20.0);
         double atk = Math.Exp(-2.3 / _len);      // reach ~90% across the look-ahead window
         double envRel = Math.Exp(-1.0 / _len);   // hold a peak until it exits the delay
         double rel = Math.Exp(-1.0 / (_sr * Math.Max(ReleaseMs, 0.01) / 1000.0));
+        double minGain = 1.0;
 
         for (int i = offset; i < offset + count; i++)
         {
@@ -238,14 +242,17 @@ public sealed class Limiter : IAudioProcessor
             _env = a > _env ? a : a + (_env - a) * envRel;   // peak-hold detector on the incoming signal
             double req = _env > ceil ? ceil / _env : 1.0;
             _gain = req < _gain ? req + (_gain - req) * atk : req + (_gain - req) * rel;
+            if (_gain < minGain) minGain = _gain;
 
             buffer[i] = (float)(delayed * _gain);
         }
+
+        GainReductionDb = minGain < 1.0 ? -20 * Math.Log10(minGain) : 0;
     }
 
     public void Reset()
     {
-        _gain = 1.0; _env = 0; _pos = 0;
+        _gain = 1.0; _env = 0; _pos = 0; GainReductionDb = 0;
         if (_delay != null) Array.Clear(_delay, 0, _delay.Length);
     }
 }

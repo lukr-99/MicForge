@@ -290,6 +290,12 @@ public sealed class MainViewModel : ViewModelBase
     private double _compGrDb;
     public double CompGrDb { get => _compGrDb; private set => Set(ref _compGrDb, value); }
 
+    private double _gateGrDb;
+    public double GateGrDb { get => _gateGrDb; private set => Set(ref _gateGrDb, value); }
+
+    private double _limiterGrDb;
+    public double LimiterGrDb { get => _limiterGrDb; private set => Set(ref _limiterGrDb, value); }
+
     // ---- options ----
     private bool _startWithWindows;
     public bool StartWithWindows
@@ -657,6 +663,7 @@ public sealed class MainViewModel : ViewModelBase
             "How quickly the limiter recovers after catching a peak.");
         lim.Add("Lookahead", 0.5, 10, 0.5, () => c.Limiter.LookaheadMs, v => c.Limiter.LookaheadMs = v, "0.0", " ms",
             "How far ahead the limiter looks so it can ramp down before a peak (adds this much latency).");
+        lim.IsLimiter = true;
         Stages.Add(lim);
 
         var output = new StageViewModel("Output", "#6C7A89", () => true, _ => { }, canToggle: false)
@@ -842,11 +849,14 @@ public sealed class MainViewModel : ViewModelBase
         GateThreshold = Norm(g.ThresholdDb, -80, 0);
         GateLevel = Norm(g.DetectorDb, -80, 0);
         GateOpen = g.Enabled && g.IsOpen;
+        GateGrDb = g.Enabled ? -g.ReductionDb : 0;   // attenuation while closing, as a positive dB
 
         var d = chain.DeEsser;
         DeEsserThreshold = Norm(d.ThresholdDb, -60, 0);
         DeEsserLevel = Norm(d.DetectorDb, -60, 0);
         DeEsserActive = d.Enabled && d.ReductionDb < -0.3;
+
+        LimiterGrDb = chain.Limiter.GainReductionDb;
     }
 
     private static double ToMeter(float peak)

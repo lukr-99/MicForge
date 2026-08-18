@@ -54,6 +54,7 @@ public class StageViewModel : ViewModelBase
     public virtual bool IsCompressor => false;
     public bool IsGate { get; set; }
     public bool IsDeEsser { get; set; }
+    public bool IsLimiter { get; set; }
 
     // The processor this card controls, and its position in the chain (for reordering).
     public IAudioProcessor Processor { get; set; }

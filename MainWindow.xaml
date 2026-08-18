@@ -130,6 +130,22 @@
                                              Level="{Binding DataContext.GateLevel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              Threshold="{Binding DataContext.GateThreshold, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              Active="{Binding DataContext.GateOpen, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,10,0,4"/>
+                        <ctrl:GrHistory Height="40"
+                                        Gr="{Binding DataContext.GateGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                    </StackPanel>
+
+                    <!-- Limiter visual (Graph view) -->
+                    <StackPanel Margin="0,10,0,0">
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueVis}">
+                                <Binding Path="IsLimiter"/>
+                                <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                        <TextBlock Text="Gain reduction (peaks caught)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <ctrl:GrHistory Height="46"
+                                        Gr="{Binding DataContext.LimiterGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
                     </StackPanel>
 
                     <!-- De-esser visual (Graph view) -->
