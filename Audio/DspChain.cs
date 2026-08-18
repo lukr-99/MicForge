@@ -9,6 +9,7 @@ public sealed class DspChain
     private readonly IAudioProcessor[] _chain;
 
     public GainStage InputGain { get; }
+    public InputAgc InputAgc { get; }
     public HighPassStage HighPass { get; }
     public NoiseSuppressor Suppressor { get; }
     public NoiseGate Gate { get; }
@@ -35,6 +36,7 @@ public sealed class DspChain
     public DspChain(double sampleRate)
     {
         InputGain = new GainStage("Input Gain");
+        InputAgc = new InputAgc(sampleRate);
         HighPass = new HighPassStage(sampleRate);
         Suppressor = new NoiseSuppressor();
         Gate = new NoiseGate(sampleRate);
@@ -50,7 +52,7 @@ public sealed class DspChain
 
         _chain = new IAudioProcessor[]
         {
-            InputGain, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
+            InputGain, InputAgc, HighPass, Suppressor, Gate, Eq, Compressor, DeEsser, Saturation, Limiter, OutputGain, Loudness
         };
     }
 

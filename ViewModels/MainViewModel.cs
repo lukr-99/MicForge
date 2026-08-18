@@ -379,6 +379,16 @@ public sealed class MainViewModel : ViewModelBase
         input.ActionCommand = new RelayCommand(Calibrate);
         Stages.Add(input);
 
+        var agc = new StageViewModel("Auto Gain", "#7FB069", () => c.InputAgc.Enabled, v => c.InputAgc.Enabled = v)
+        {
+            Info = "Automatically rides the input gain to hold a steady speech level as your mic distance or volume change (gated on silence). Complements the output loudness leveler."
+        };
+        agc.Add("Target", -30, -6, 0.5, () => c.InputAgc.TargetDb, v => c.InputAgc.TargetDb = v, "0.0", " dB",
+            "The average speech level the auto-gain aims for.");
+        agc.Add("Max gain", 0, 18, 1, () => c.InputAgc.MaxGainDb, v => c.InputAgc.MaxGainDb = v, "0", " dB",
+            "How much boost or cut the auto-gain may apply.");
+        Stages.Add(agc);
+
         var hp = new StageViewModel("High-Pass", "#4FA3E3", () => c.HighPass.Enabled, v => c.HighPass.Enabled = v)
         {
             Info = "Rolls off low-frequency rumble — desk thumps, footsteps, AC hum, plosives — below the cutoff, cleaning the low end without thinning your voice."

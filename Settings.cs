@@ -29,6 +29,10 @@ public sealed class Settings
 
     public double InputGainDb { get; set; }
 
+    public bool AgcEnabled { get; set; }
+    public double AgcTargetDb { get; set; } = -18;
+    public double AgcMaxGainDb { get; set; } = 12;
+
     public bool HighPassEnabled { get; set; } = true;
     public double HighPassFreq { get; set; } = 80;
 
@@ -89,6 +93,9 @@ public sealed class Settings
         var s = new Settings
         {
             InputGainDb = c.InputGain.GainDb,
+            AgcEnabled = c.InputAgc.Enabled,
+            AgcTargetDb = c.InputAgc.TargetDb,
+            AgcMaxGainDb = c.InputAgc.MaxGainDb,
             HighPassEnabled = c.HighPass.Enabled,
             HighPassFreq = c.HighPass.Frequency,
             SuppressorEnabled = c.Suppressor.Enabled,
@@ -140,6 +147,9 @@ public sealed class Settings
     public void ApplyTo(DspChain c)
     {
         c.InputGain.GainDb = InputGainDb;
+        c.InputAgc.Enabled = AgcEnabled;
+        c.InputAgc.TargetDb = AgcTargetDb;
+        c.InputAgc.MaxGainDb = AgcMaxGainDb;
         c.HighPass.Enabled = HighPassEnabled;
         c.HighPass.Frequency = HighPassFreq;
         if (!string.IsNullOrEmpty(RnnoisePath)) c.Suppressor.TryLoad(RnnoisePath);
