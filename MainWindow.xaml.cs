@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private KeyboardHook _kbHook;
     private Point _dragStart;
     private StageViewModel _dragStage;
+    private System.Collections.Generic.List<StageViewModel> _dragOriginalOrder;
 
     public MainWindow()
     {
@@ -69,21 +70,33 @@ public partial class MainWindow : Window
 
         var stage = _dragStage;
         _dragStage = null;
-        DragDrop.DoDragDrop(StagesList, new DataObject("MicForgeStage", stage), DragDropEffects.Move);
+        _dragOriginalOrder = new System.Collections.Generic.List<StageViewModel>(_vm.Stages);
+        _vm.SetDragging(stage, true);
+
+        var effect = DragDrop.DoDragDrop(StagesList, new DataObject("MicForgeStage", stage), DragDropEffects.Move);
+
+        _vm.SetDragging(stage, false);
+        if (effect == DragDropEffects.Move) _vm.CommitOrder();
+        else _vm.RestoreOrder(_dragOriginalOrder);
+        _dragOriginalOrder = null;
     }
 
     private void StagesDragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent("MicForgeStage") ? DragDropEffects.Move : DragDropEffects.None;
         e.Handled = true;
+        if (e.Data.GetData("MicForgeStage") is not StageViewModel dragged)
+        {
+            e.Effects = DragDropEffects.None;
+            return;
+        }
+        e.Effects = DragDropEffects.Move;
+
+        // Live preview: reflow the cards as the cursor moves over a different one.
+        var target = StageAt(e.GetPosition(StagesList));
+        if (target != null && target != dragged) _vm.MoveStageLive(dragged, target);
     }
 
-    private void StagesDrop(object sender, DragEventArgs e)
-    {
-        if (e.Data.GetData("MicForgeStage") is not StageViewModel dragged) return;
-        var target = StageAt(e.GetPosition(StagesList));
-        if (target != null) _vm.MoveStage(dragged, target);
-    }
+    private void StagesDrop(object sender, DragEventArgs e) => e.Handled = true;
 
     private StageViewModel StageAt(Point p)
     {

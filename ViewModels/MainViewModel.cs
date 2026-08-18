@@ -641,13 +641,30 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     // ---- stage reordering (drag & drop changes the processing order) ----
-    public void MoveStage(StageViewModel dragged, StageViewModel target)
+    public void SetDragging(StageViewModel stage, bool on)
+    {
+        if (stage != null) stage.IsDragging = on;
+    }
+
+    /// <summary>Live preview during a drag: reorder cards + renumber, without touching the chain yet.</summary>
+    public void MoveStageLive(StageViewModel dragged, StageViewModel target)
     {
         if (dragged == null || target == null || dragged == target) return;
         int from = Stages.IndexOf(dragged), to = Stages.IndexOf(target);
         if (from < 0 || to < 0) return;
         Stages.Move(from, to);
-        RenumberAndApplyChain(save: true);
+        for (int i = 0; i < Stages.Count; i++) Stages[i].Order = i + 1;
+    }
+
+    /// <summary>Apply the previewed order to the chain and persist it (on drop).</summary>
+    public void CommitOrder() => RenumberAndApplyChain(save: true);
+
+    /// <summary>Revert to the given order (drag cancelled).</summary>
+    public void RestoreOrder(List<StageViewModel> order)
+    {
+        Stages.Clear();
+        foreach (var s in order) Stages.Add(s);
+        for (int i = 0; i < Stages.Count; i++) Stages[i].Order = i + 1;
     }
 
     private void RenumberAndApplyChain(bool save)

@@ -15,7 +15,16 @@
     <Window.Resources>
         <!-- One template for every stage; the specialised visuals switch on IsEq / IsCompressor + VisualMode. -->
         <DataTemplate x:Key="StageTemplate">
-            <Border Style="{StaticResource Card}" Width="302" Margin="0,0,12,12" Padding="16,14">
+            <Border Width="302" Margin="0,0,12,12" Padding="16,14">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDragging}" Value="True">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <StackPanel>
                     <!-- header -->
                     <Grid>

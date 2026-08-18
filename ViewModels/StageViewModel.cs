@@ -62,6 +62,9 @@ public class StageViewModel : ViewModelBase
     private int _order;
     public int Order { get => _order; set => Set(ref _order, value); }
 
+    private bool _isDragging;
+    public bool IsDragging { get => _isDragging; set => Set(ref _isDragging, value); }
+
     public ObservableCollection<ParamViewModel> Params { get; } = new();
 
     public bool Enabled
