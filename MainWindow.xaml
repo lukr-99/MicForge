@@ -538,6 +538,44 @@
                     </StackPanel>
                 </Border>
 
+                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Reliability &amp; diagnostics" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="Follow the Windows default mic"/>
+                                <TextBlock Text="Automatically switch and restart when you change your default microphone in Windows."
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding FollowDefaultInput}"/>
+                        </Grid>
+
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Session health" FontWeight="SemiBold" FontSize="12"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="DSP load " FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBlock Text="{Binding DspLoadText}" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="   ·   glitches " FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBlock Text="{Binding GlitchText}" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Open logs" Command="{Binding OpenLogsCommand}"
+                                    VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <Border Style="{StaticResource Card}" Padding="18,16">
                     <StackPanel>
                         <TextBlock Text="Startup &amp; tray" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>

@@ -34,6 +34,7 @@ public sealed class MainViewModel : ViewModelBase
         ResetCraftingCommand = new RelayCommand(ResetCrafting);
         UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
         RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
+        OpenLogsCommand = new RelayCommand(OpenLogs);
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
         SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
@@ -51,6 +52,7 @@ public sealed class MainViewModel : ViewModelBase
             _visualMode = saved.VisualMode;
             _monitorEnabled = saved.MonitorEnabled;
             _globalHotkeys = saved.GlobalHotkeysEnabled;
+            _followDefaultInput = saved.FollowDefaultInput;
             _showMuteOverlay = saved.ShowMuteOverlay;
             _pttEnabled = saved.PttEnabled;
             _pttHoldToTalk = saved.PttHoldToTalk;
@@ -62,6 +64,7 @@ public sealed class MainViewModel : ViewModelBase
         RestoreCrafting(saved);
         BuildHotkeys(saved);
         if (_pttEnabled) ApplyPttState();
+        if (_followDefaultInput) ApplyFollowDefault();
 
         _startWithWindows = StartupManager.IsEnabled;
 
@@ -91,6 +94,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ResetCraftingCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand RedoCommand { get; }
+    public RelayCommand OpenLogsCommand { get; }
     public RelayCommand SetHotkeyCommand { get; }
     public RelayCommand ClearHotkeyCommand { get; }
     public RelayCommand SetPttKeyCommand { get; }
@@ -483,6 +487,77 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     private void ApplyMonitor() => _engine.ConfigureMonitor(_selectedMonitorDevice, _monitorEnabled);
+
+    // ---- reliability ----
+    private DefaultDeviceWatcher _defaultWatcher;
+
+    private bool _followDefaultInput;
+    public bool FollowDefaultInput
+    {
+        get => _followDefaultInput;
+        set { if (Set(ref _followDefaultInput, value)) { ApplyFollowDefault(); SaveSettings(); } }
+    }
+
+    private string _dspLoadText = "—";
+    public string DspLoadText { get => _dspLoadText; private set => Set(ref _dspLoadText, value); }
+
+    private string _glitchText = "0";
+    public string GlitchText { get => _glitchText; private set => Set(ref _glitchText, value); }
+
+    private void ApplyFollowDefault()
+    {
+        if (_followDefaultInput)
+        {
+            if (_defaultWatcher == null)
+            {
+                _defaultWatcher = new DefaultDeviceWatcher();
+                _defaultWatcher.DefaultCaptureChanged += OnDefaultCaptureChanged;
+            }
+            _defaultWatcher.Start();
+        }
+        else
+        {
+            _defaultWatcher?.Dispose();
+            _defaultWatcher = null;
+        }
+    }
+
+    private void OnDefaultCaptureChanged(string newId)
+    {
+        var disp = System.Windows.Application.Current?.Dispatcher;
+        if (disp == null) return;
+        disp.BeginInvoke(() =>
+        {
+            if (!_followDefaultInput) return;
+            LoadDevices();
+            var dev = Inputs.FirstOrDefault(d => d.Id == newId);
+            if (dev == null || (SelectedInput != null && SelectedInput.Id == newId)) return;
+
+            Log.Info($"Following new default mic: {dev.Name}");
+            bool wasRunning = _engine.Running;
+            SelectedInput = dev;
+            if (wasRunning)
+            {
+                _engine.Stop();
+                try { _engine.Start(SelectedInput, SelectedOutput); }
+                catch (Exception ex) { Log.Error("Follow-default restart failed", ex); }
+            }
+            SaveSettings();
+        });
+    }
+
+    private void OpenLogs()
+    {
+        try
+        {
+            var path = Log.FilePath;
+            var psi = System.IO.File.Exists(path)
+                ? new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                : new System.Diagnostics.ProcessStartInfo(Log.Folder) { UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+    }
 
     public string VersionText => "MicForge · v1.0.1 · PolyForm Noncommercial 1.0.0";
 
@@ -1044,6 +1119,9 @@ public sealed class MainViewModel : ViewModelBase
         double lufs = chain.Loudness.ShortTermLufs;
         LufsText = lufs <= -60 ? "—" : $"{lufs:0.0}";
 
+        DspLoadText = (running && !recon) ? $"{chain.DspLoad * 100:0} %" : "—";
+        GlitchText = _engine.Glitches.ToString();
+
         var g = chain.Gate;
         GateThreshold = Norm(g.ThresholdDb, -80, 0);
         GateLevel = Norm(g.DetectorDb, -80, 0);
@@ -1105,6 +1183,7 @@ public sealed class MainViewModel : ViewModelBase
         s.MonitorEnabled = MonitorEnabled;
         s.MonitorDeviceId = SelectedMonitorDevice?.Id;
         s.GlobalHotkeysEnabled = GlobalHotkeysEnabled;
+        s.FollowDefaultInput = FollowDefaultInput;
         s.ShowMuteOverlay = ShowMuteOverlay;
         s.PttEnabled = PttEnabled;
         s.PttHoldToTalk = PttHoldToTalk;
@@ -1123,6 +1202,7 @@ public sealed class MainViewModel : ViewModelBase
     {
         _meterTimer?.Stop();
         _histTimer?.Stop();
+        _defaultWatcher?.Dispose();
         SaveSettings();
         _engine.Dispose();
     }

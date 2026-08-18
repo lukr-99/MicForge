@@ -114,6 +114,7 @@ public sealed class Settings
     public bool MonitorEnabled { get; set; }
     public string MonitorDeviceId { get; set; }
     public bool GlobalHotkeysEnabled { get; set; }
+    public bool FollowDefaultInput { get; set; }
     public bool ShowMuteOverlay { get; set; } = true;
     public bool PttEnabled { get; set; }
     public bool PttHoldToTalk { get; set; } = true;

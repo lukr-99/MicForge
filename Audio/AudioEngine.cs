@@ -41,6 +41,11 @@ public sealed class AudioEngine : IDisposable
     public volatile bool Running;
     public volatile bool Reconnecting;
 
+    // Reliability telemetry.
+    public volatile int Glitches;                 // dropped-buffer / stall events this session
+    private long _lastDataTicks;
+    private System.Timers.Timer _watchdog;
+
     // Public lists for the UI: lightweight POCOs whose names are read once here, so
     // binding a ComboBox to them never re-queries COM (the source of the picker lag).
     public static List<DeviceInfo> InputDevices() => ToInfo(Enumerate(DataFlow.Capture));
@@ -107,7 +112,12 @@ public sealed class AudioEngine : IDisposable
             DiscardOnBufferOverflow = true,
             BufferDuration = TimeSpan.FromMilliseconds(500)
         };
-        _capture.DataAvailable += (_, a) => _buffer.AddSamples(a.Buffer, 0, a.BytesRecorded);
+        _capture.DataAvailable += (_, a) =>
+        {
+            if (_buffer.BufferedBytes + a.BytesRecorded > _buffer.BufferLength) Glitches++;
+            _buffer.AddSamples(a.Buffer, 0, a.BytesRecorded);
+            _lastDataTicks = Environment.TickCount64;
+        };
         _capture.RecordingStopped += OnStopped;
 
         // Capture format -> mono 48 kHz float.
@@ -137,6 +147,7 @@ public sealed class AudioEngine : IDisposable
         _output.PlaybackStopped += OnStopped;
         _output.Init(outProv);
 
+        _lastDataTicks = Environment.TickCount64;
         _capture.StartRecording();
         _output.Play();
 
@@ -144,7 +155,25 @@ public sealed class AudioEngine : IDisposable
         Reconnecting = false;
         _recovering = false;
 
+        EnsureWatchdog();
+        _watchdog.Start();
         ApplyMonitor();
+    }
+
+    private void EnsureWatchdog()
+    {
+        if (_watchdog != null) return;
+        _watchdog = new System.Timers.Timer(1000) { AutoReset = true };
+        _watchdog.Elapsed += (_, _) =>
+        {
+            if (!Running || _recovering || _userStopped) return;
+            if (Environment.TickCount64 - _lastDataTicks > 2000)
+            {
+                Log.Warn("Audio stall detected (no capture data for 2s) — restarting the stream.");
+                Glitches++;
+                BeginRecovery();
+            }
+        };
     }
 
     // ---- reconnect ----
@@ -283,6 +312,7 @@ public sealed class AudioEngine : IDisposable
             _recovering = false;
             Reconnecting = false;
             _recoveryTimer?.Stop();
+            _watchdog?.Stop();
             StopStreams();
             Chain.Reset();
             Running = false;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NAudio.Wave;
 
 namespace MicForge.Audio;
@@ -9,6 +10,11 @@ public sealed class DspChain
 {
     private readonly IAudioProcessor[] _chain;
     private volatile IAudioProcessor[] _order;
+    private readonly double _sr;
+
+    /// <summary>Smoothed DSP load: processing time as a fraction of real time (0..1+).</summary>
+    public volatile float DspLoad;
+    private double _loadSmooth;
 
     public GainStage InputGain { get; }
     public InputAgc InputAgc { get; }
@@ -41,6 +47,7 @@ public sealed class DspChain
 
     public DspChain(double sampleRate)
     {
+        _sr = sampleRate;
         InputGain = new GainStage("Input Gain");
         InputAgc = new InputAgc(sampleRate);
         HighPass = new HighPassStage(sampleRate);
@@ -116,7 +123,15 @@ public sealed class DspChain
         }
 
         var order = _order;
+        long t0 = Stopwatch.GetTimestamp();
         foreach (var p in order) p.Process(buffer, offset, count);
+        double procSec = (Stopwatch.GetTimestamp() - t0) / (double)Stopwatch.Frequency;
+        double bufSec = count / _sr;
+        if (bufSec > 0)
+        {
+            _loadSmooth = _loadSmooth * 0.9 + (procSec / bufSec) * 0.1;
+            DspLoad = (float)_loadSmooth;
+        }
 
         if (Mute)
         {
