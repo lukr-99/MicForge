@@ -20,6 +20,7 @@ public sealed class CraftCard : ViewModelBase
         Id = cfg.Id;
         Icon = cfg.Icon;
         Title = cfg.Title;
+        Category = string.IsNullOrWhiteSpace(cfg.Category) ? "Tone" : cfg.Category;
         Blurb = cfg.Blurb;
         Explanation = string.IsNullOrWhiteSpace(cfg.Explanation) ? cfg.Blurb : cfg.Explanation;
         Pitch = cfg.Pitch;
@@ -31,6 +32,7 @@ public sealed class CraftCard : ViewModelBase
     public string Id { get; }
     public string Icon { get; }
     public string Title { get; }
+    public string Category { get; }
     public string Blurb { get; }
     public string Explanation { get; }
 

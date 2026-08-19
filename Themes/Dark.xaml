@@ -20,6 +20,7 @@
     <conv:EmptyStringToCollapsedConverter x:Key="EmptyToCollapsed"/>
     <conv:AllTrueToVisibleConverter x:Key="AllTrueVis"/>
     <conv:AllTrueToCollapsedConverter x:Key="AllTrueCollapsed"/>
+    <conv:StringEqualsConverter x:Key="StrEq"/>
     <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
     <!-- ============ Text ============ -->
@@ -404,6 +405,35 @@
                         <TextBlock Text="i" FontFamily="Georgia" FontStyle="Italic" FontSize="12"
                                    Foreground="{TemplateBinding Foreground}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="{StaticResource AccentBrush}"/>
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Filter chip (RadioButton) for the Crafting category filter. -->
+    <Style x:Key="Chip" TargetType="RadioButton">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="b" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="13" Padding="12,5">
+                        <ContentPresenter VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">

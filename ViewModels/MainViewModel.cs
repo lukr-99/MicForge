@@ -938,6 +938,31 @@ public sealed class MainViewModel : ViewModelBase
     public ObservableCollection<CraftCard> CraftCards { get; } = new();
     private bool _craftingBuilt;
 
+    // Category filter for the Crafting cards.
+    public string[] CraftCategories { get; } =
+        new[] { "All" }.Concat(CraftCatalog.Categories).ToArray();
+
+    private System.ComponentModel.ICollectionView _craftView;
+    public System.ComponentModel.ICollectionView CraftView
+    {
+        get
+        {
+            if (_craftView == null)
+            {
+                _craftView = System.Windows.Data.CollectionViewSource.GetDefaultView(CraftCards);
+                _craftView.Filter = o => _craftCategory == "All" || (o as CraftCard)?.Category == _craftCategory;
+            }
+            return _craftView;
+        }
+    }
+
+    private string _craftCategory = "All";
+    public string SelectedCraftCategory
+    {
+        get => _craftCategory;
+        set { if (Set(ref _craftCategory, value)) CraftView.Refresh(); }
+    }
+
     private void BuildCraftCards()
     {
         if (_craftingBuilt) return;

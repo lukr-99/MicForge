@@ -11,6 +11,7 @@ public sealed class CraftCardConfig
     public string Id { get; set; }
     public string Icon { get; set; }
     public string Title { get; set; }
+    public string Category { get; set; }             // Tone / Polish / Fun / FX
     public string Blurb { get; set; }
     public string Explanation { get; set; }
     public double Pitch { get; set; }
@@ -86,6 +87,7 @@ public static class CraftCatalog
         foreach (var c in list)
         {
             if (string.IsNullOrEmpty(c.Id)) c.Id = "card" + i;
+            if (string.IsNullOrEmpty(c.Category)) c.Category = CategoryFor(c.Id);
             if (c.Eq == null || c.Eq.Length != 5)
             {
                 var eq = new double[5];
@@ -101,8 +103,30 @@ public static class CraftCatalog
         double pitch, double[] eq, double drive, double exciter = 0) =>
         new() { Id = id, Icon = icon, Title = title, Blurb = blurb, Explanation = explanation, Pitch = pitch, Eq = eq, Drive = drive, Exciter = exciter };
 
-    public static List<CraftCardConfig> Defaults() => new()
+    /// <summary>Ordered category names for the Crafting filter (plus an implicit "All").</summary>
+    public static readonly string[] Categories = { "Tone", "Polish", "Fun", "FX" };
+
+    // Built-in card → category. Used to categorise defaults and to backfill older files.
+    private static readonly Dictionary<string, string> Cat = new()
     {
+        ["bass"] = "Tone", ["thin"] = "Tone", ["warm"] = "Tone", ["bright"] = "Tone",
+        ["pres"] = "Tone", ["air"] = "Tone", ["pod"] = "Tone", ["boomy"] = "Tone", ["edgy"] = "Tone",
+        ["announcer"] = "Polish", ["narrator"] = "Polish", ["asmr"] = "Polish", ["crisp"] = "Polish",
+        ["deepradio"] = "Polish", ["sparkle"] = "Polish", ["hd"] = "Polish", ["silky"] = "Polish",
+        ["crystal"] = "Polish", ["bcpro"] = "Polish",
+        ["deep"] = "Fun", ["chip"] = "Fun", ["robot"] = "Fun", ["whisp"] = "Fun", ["giant"] = "Fun",
+        ["goblin"] = "Fun", ["alien"] = "Fun", ["monster"] = "Fun", ["helium"] = "Fun",
+        ["radio"] = "FX", ["phone"] = "FX", ["mega"] = "FX", ["water"] = "FX",
+        ["vintage"] = "FX", ["nasal"] = "FX", ["cave"] = "FX", ["intercom"] = "FX",
+    };
+
+    public static string CategoryFor(string id) =>
+        id != null && Cat.TryGetValue(id, out var cat) ? cat : "Tone";
+
+    public static List<CraftCardConfig> Defaults()
+    {
+        var list = new List<CraftCardConfig>
+        {
         C("bass", "🔊", "Bass Boost", "Fuller, deeper low end.",
             "Lifts the low shelf so your voice sits bigger and warmer. Great for thin mics; too much gets muddy.",
             0, new[]{ 6.0, 0, 0, 0, 0 }, 0),
@@ -211,5 +235,8 @@ public static class CraftCatalog
         C("edgy", "🔪", "Edgy", "Aggressive and cutting.",
             "Hard presence with saturation and exciter for a raw, in-your-face delivery.",
             0, new[]{ 0.0, 0, 3, 3, 0 }, 4, 30),
-    };
+        };
+        foreach (var card in list) card.Category = CategoryFor(card.Id);
+        return list;
+    }
 }

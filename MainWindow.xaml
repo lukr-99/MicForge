@@ -499,7 +499,22 @@
                     </StackPanel>
                 </Border>
 
-                <ItemsControl ItemsSource="{Binding CraftCards}">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <TextBlock Text="Filter" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="All"
+                                 IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=All}"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="🎚 Tone"
+                                 IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Tone}"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="✨ Polish"
+                                 IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Polish}"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="😜 Fun"
+                                 IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Fun}"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="📻 FX"
+                                 IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=FX}"/>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding CraftView}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel/>
@@ -509,6 +524,8 @@
                         <DataTemplate>
                             <Border Style="{StaticResource Card}" Width="220" Margin="0,0,12,12" Padding="14">
                                 <StackPanel>
+                                    <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextMutedBrush}" Opacity="0.75" Margin="0,0,0,3"/>
                                     <Grid>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding Icon}" FontSize="18" Margin="0,0,8,0"/>

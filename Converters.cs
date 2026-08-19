@@ -34,6 +34,16 @@ public sealed class EmptyStringToCollapsedConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>True when the bound value equals the ConverterParameter string (for filter chips).</summary>
+public sealed class StringEqualsConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.Equals(value as string, parameter as string, StringComparison.Ordinal);
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is true ? parameter : Binding.DoNothing;
+}
+
 /// <summary>All inputs true -> Visible, otherwise Collapsed.</summary>
 public sealed class AllTrueToVisibleConverter : IMultiValueConverter
 {
