@@ -1,0 +1,722 @@
+[
+  {
+    "Id": "bass",
+    "Icon": "\uD83D\uDD0A",
+    "Title": "Bass Boost",
+    "Category": "Tone",
+    "Blurb": "Fuller, deeper low end.",
+    "Explanation": "Lifts the low shelf so your voice sits bigger and warmer. Great for thin mics; too much gets muddy.",
+    "Pitch": 0,
+    "Eq": [
+      6,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "thin",
+    "Icon": "\uD83C\uDF43",
+    "Title": "Bass Cut",
+    "Category": "Tone",
+    "Blurb": "Lighter, thinner \u2014 less rumble.",
+    "Explanation": "Cuts the low shelf and rolls off the very bottom to clear mud and proximity boom.",
+    "Pitch": 0,
+    "Eq": [
+      -6,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 120,
+    "HighCut": 0
+  },
+  {
+    "Id": "warm",
+    "Icon": "\uD83D\uDD25",
+    "Title": "Warm",
+    "Category": "Tone",
+    "Blurb": "Cozy, radio-warm tone.",
+    "Explanation": "A gentle low lift with the highs eased back and a touch of tube warmth.",
+    "Pitch": 0,
+    "Eq": [
+      2,
+      1,
+      0,
+      -1,
+      0
+    ],
+    "Drive": 1,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "bright",
+    "Icon": "\u2728",
+    "Title": "Bright",
+    "Category": "Tone",
+    "Blurb": "Crisp and clear up top.",
+    "Explanation": "Adds presence and air so consonants cut through. Back off if it starts to sound sibilant.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      0,
+      3,
+      4
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "pres",
+    "Icon": "\uD83C\uDFAF",
+    "Title": "Presence",
+    "Category": "Tone",
+    "Blurb": "Voice pushed forward.",
+    "Explanation": "Boosts the upper-mids where intelligibility lives, making you sound closer and clearer.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      2,
+      3,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "air",
+    "Icon": "\uD83D\uDCA8",
+    "Title": "Air",
+    "Category": "Tone",
+    "Blurb": "Open, airy sheen.",
+    "Explanation": "A high-shelf lift above 10 kHz for a breezy, expensive-sounding top end.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      0,
+      0,
+      5
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "pod",
+    "Icon": "\uD83C\uDF99\uFE0F",
+    "Title": "Podcast",
+    "Category": "Tone",
+    "Blurb": "Smooth, full, professional.",
+    "Explanation": "A balanced lift \u2014 body, presence and a little air, plus gentle sheen \u2014 for a polished spoken tone.",
+    "Pitch": 0,
+    "Eq": [
+      3,
+      1,
+      0,
+      1,
+      1
+    ],
+    "Drive": 0,
+    "Exciter": 12,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "boomy",
+    "Icon": "\uD83E\uDD41",
+    "Title": "Boomy",
+    "Category": "Tone",
+    "Blurb": "Chesty and thick.",
+    "Explanation": "Heavy low and low-mid lift for a big, chesty broadcast weight. Use sparingly.",
+    "Pitch": 0,
+    "Eq": [
+      5,
+      3,
+      0,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "edgy",
+    "Icon": "\uD83D\uDD2A",
+    "Title": "Edgy",
+    "Category": "Tone",
+    "Blurb": "Aggressive and cutting.",
+    "Explanation": "Hard presence with saturation and exciter for a raw, in-your-face delivery.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      3,
+      3,
+      0
+    ],
+    "Drive": 4,
+    "Exciter": 25,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "announcer",
+    "Icon": "\uD83D\uDCE3",
+    "Title": "Announcer",
+    "Category": "Polish",
+    "Blurb": "Big movie-trailer voice.",
+    "Explanation": "Drops your pitch, adds deep chest body and forward presence with a little weight and sheen \u2014 larger than life.",
+    "Pitch": -3,
+    "Eq": [
+      5,
+      1,
+      1,
+      3,
+      1
+    ],
+    "Drive": 2,
+    "Exciter": 15,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "narrator",
+    "Icon": "\uD83D\uDCD6",
+    "Title": "Narrator",
+    "Category": "Polish",
+    "Blurb": "Warm storyteller.",
+    "Explanation": "Slightly lower pitch, rich warm lows and gentle presence with a hint of tape warmth \u2014 relaxed and engaging.",
+    "Pitch": -1,
+    "Eq": [
+      4,
+      1,
+      0,
+      1,
+      0
+    ],
+    "Drive": 3,
+    "Exciter": 8,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "asmr",
+    "Icon": "\uD83C\uDF19",
+    "Title": "ASMR",
+    "Category": "Polish",
+    "Blurb": "Ultra-soft and close.",
+    "Explanation": "Trims the low rumble and pushes lots of delicate high-frequency detail with heavy exciter \u2014 intimate and tingly.",
+    "Pitch": 0,
+    "Eq": [
+      -2,
+      0,
+      -1,
+      1,
+      7
+    ],
+    "Drive": 0,
+    "Exciter": 60,
+    "LowCut": 120,
+    "HighCut": 0
+  },
+  {
+    "Id": "crisp",
+    "Icon": "\uD83E\uDDCA",
+    "Title": "Crisp",
+    "Category": "Polish",
+    "Blurb": "Clean and articulate.",
+    "Explanation": "A tidy presence-and-air lift with a touch less low-mid and some exciter for a clear, modern sound.",
+    "Pitch": 0,
+    "Eq": [
+      -1,
+      -2,
+      1,
+      3,
+      3
+    ],
+    "Drive": 0,
+    "Exciter": 20,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "deepradio",
+    "Icon": "\uD83C\uDF9A\uFE0F",
+    "Title": "Deep Radio",
+    "Category": "Polish",
+    "Blurb": "Smooth late-night DJ.",
+    "Explanation": "A slight pitch drop with rich lows, controlled presence and a little sheen \u2014 the classic FM night-show voice.",
+    "Pitch": -2,
+    "Eq": [
+      4,
+      1,
+      0,
+      1,
+      -1
+    ],
+    "Drive": 2,
+    "Exciter": 10,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "sparkle",
+    "Icon": "\uD83C\uDF1F",
+    "Title": "Sparkle",
+    "Category": "Polish",
+    "Blurb": "Shimmering high-end sheen.",
+    "Explanation": "Uses the harmonic exciter to add brand-new sparkle up top \u2014 brighter and livelier than a plain treble boost.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      0,
+      1,
+      2
+    ],
+    "Drive": 0,
+    "Exciter": 45,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "hd",
+    "Icon": "\uD83D\uDC8E",
+    "Title": "HD Voice",
+    "Category": "Polish",
+    "Blurb": "Crisp, modern, hi-fi.",
+    "Explanation": "Presence and air plus a good dose of exciter for a clean, detailed, high-definition sound.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      1,
+      2,
+      3
+    ],
+    "Drive": 0,
+    "Exciter": 32,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "silky",
+    "Icon": "\uD83E\uDDF5",
+    "Title": "Silky",
+    "Category": "Polish",
+    "Blurb": "Smooth but detailed.",
+    "Explanation": "A little low-end body with gentle exciter sheen \u2014 smooth yet articulate.",
+    "Pitch": 0,
+    "Eq": [
+      1,
+      0,
+      0,
+      0,
+      1
+    ],
+    "Drive": 0,
+    "Exciter": 22,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "crystal",
+    "Icon": "\uD83D\uDD2E",
+    "Title": "Crystal",
+    "Category": "Polish",
+    "Blurb": "Ultra-clear and bright.",
+    "Explanation": "Strong presence, air and exciter for a glassy, crystal-clear voice. Ease off if it gets fizzy.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      2,
+      3,
+      3
+    ],
+    "Drive": 0,
+    "Exciter": 40,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "bcpro",
+    "Icon": "\uD83D\uDCE1",
+    "Title": "Broadcast Pro",
+    "Category": "Polish",
+    "Blurb": "Polished on-air sound.",
+    "Explanation": "Full body, forward presence and a hint of exciter \u2014 a finished, broadcast-ready tone.",
+    "Pitch": 0,
+    "Eq": [
+      3,
+      0,
+      1,
+      2,
+      1
+    ],
+    "Drive": 1,
+    "Exciter": 20,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "deep",
+    "Icon": "\uD83E\uDDDB",
+    "Title": "Deep Voice",
+    "Category": "Fun",
+    "Blurb": "Lower, bigger, villainous.",
+    "Explanation": "Shifts your pitch down a few semitones with a low-end lift \u2014 instant movie-villain voice.",
+    "Pitch": -4,
+    "Eq": [
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "chip",
+    "Icon": "\uD83D\uDC3F\uFE0F",
+    "Title": "Chipmunk",
+    "Category": "Fun",
+    "Blurb": "High and squeaky.",
+    "Explanation": "Shifts your pitch way up for a cartoon-critter voice.",
+    "Pitch": 5,
+    "Eq": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "robot",
+    "Icon": "\uD83E\uDD16",
+    "Title": "Robot",
+    "Category": "Fun",
+    "Blurb": "Gritty machine voice.",
+    "Explanation": "A small downward pitch shift plus heavy saturation and a mid push for a mechanical tone.",
+    "Pitch": -2,
+    "Eq": [
+      0,
+      0,
+      2,
+      1,
+      0
+    ],
+    "Drive": 8,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "whisp",
+    "Icon": "\uD83D\uDC7B",
+    "Title": "Whisper",
+    "Category": "Fun",
+    "Blurb": "Soft, breathy, ghostly.",
+    "Explanation": "Strips out the body and rumble, pushes lots of breathy air and exciter, and rolls off the bottom so almost none of the voiced fullness is left \u2014 a hushed whisper.",
+    "Pitch": 0,
+    "Eq": [
+      -9,
+      -3,
+      -2,
+      2,
+      7
+    ],
+    "Drive": 0,
+    "Exciter": 55,
+    "LowCut": 320,
+    "HighCut": 0
+  },
+  {
+    "Id": "giant",
+    "Icon": "\uD83D\uDDFF",
+    "Title": "Giant",
+    "Category": "Fun",
+    "Blurb": "Huge and slow.",
+    "Explanation": "A big downward pitch shift with a heavy low-end lift and a darker top \u2014 you become a towering giant.",
+    "Pitch": -7,
+    "Eq": [
+      5,
+      0,
+      -1,
+      0,
+      -2
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 6000
+  },
+  {
+    "Id": "goblin",
+    "Icon": "\uD83D\uDC7A",
+    "Title": "Goblin",
+    "Category": "Fun",
+    "Blurb": "Small, raspy, mischievous.",
+    "Explanation": "Pitches up and adds grit and nasal mids for a scrappy little creature.",
+    "Pitch": 3,
+    "Eq": [
+      -2,
+      0,
+      3,
+      2,
+      0
+    ],
+    "Drive": 6,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "alien",
+    "Icon": "\uD83D\uDC7D",
+    "Title": "Alien",
+    "Category": "Fun",
+    "Blurb": "Otherworldly and hollow.",
+    "Explanation": "An odd scoop with a metallic presence peak, grit and a pitch shift for an off-world tone.",
+    "Pitch": 2,
+    "Eq": [
+      -4,
+      0,
+      -3,
+      4,
+      2
+    ],
+    "Drive": 3,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "monster",
+    "Icon": "\uD83D\uDE08",
+    "Title": "Monster",
+    "Category": "Fun",
+    "Blurb": "Deep, growly, menacing.",
+    "Explanation": "A deep pitch drop with heavy saturation, low-mid weight and a throaty, rolled-off top \u2014 a proper monster growl.",
+    "Pitch": -6,
+    "Eq": [
+      4,
+      2,
+      0,
+      0,
+      -2
+    ],
+    "Drive": 9,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 5000
+  },
+  {
+    "Id": "helium",
+    "Icon": "\uD83C\uDF88",
+    "Title": "Helium",
+    "Category": "Fun",
+    "Blurb": "Party-balloon squeak.",
+    "Explanation": "An extreme upward pitch shift for a silly, high, squeaky voice.",
+    "Pitch": 8,
+    "Eq": [
+      0,
+      0,
+      1,
+      1,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "radio",
+    "Icon": "\uD83D\uDCFB",
+    "Title": "Radio",
+    "Category": "FX",
+    "Blurb": "Old-school broadcast band.",
+    "Explanation": "Band-limits to the midrange like an AM radio and adds grit \u2014 that classic tinny, distorted broadcast sound.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      0,
+      3,
+      1,
+      0
+    ],
+    "Drive": 6,
+    "Exciter": 0,
+    "LowCut": 300,
+    "HighCut": 5000
+  },
+  {
+    "Id": "phone",
+    "Icon": "\u260E\uFE0F",
+    "Title": "Telephone",
+    "Category": "FX",
+    "Blurb": "Tinny call-quality voice.",
+    "Explanation": "Hard-limits the sound to the ~300 Hz\u20133.4 kHz phone band with a mid push \u2014 a genuine telephone/comms effect.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      1,
+      4,
+      1,
+      0
+    ],
+    "Drive": 2,
+    "Exciter": 0,
+    "LowCut": 350,
+    "HighCut": 3400
+  },
+  {
+    "Id": "mega",
+    "Icon": "\uD83D\uDCE2",
+    "Title": "Megaphone",
+    "Category": "FX",
+    "Blurb": "Loud-hailer honk.",
+    "Explanation": "Cuts the lows and highs to a narrow band, cranks a resonant nasal midrange and drives it into distortion \u2014 a real bullhorn.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      3,
+      9,
+      2,
+      0
+    ],
+    "Drive": 8,
+    "Exciter": 0,
+    "LowCut": 500,
+    "HighCut": 3800
+  },
+  {
+    "Id": "water",
+    "Icon": "\uD83C\uDF0A",
+    "Title": "Underwater",
+    "Category": "FX",
+    "Blurb": "Muffled and submerged.",
+    "Explanation": "Rolls everything above ~600 Hz right off and thickens the lows so you sound properly submerged.",
+    "Pitch": 0,
+    "Eq": [
+      3,
+      2,
+      -3,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 600
+  },
+  {
+    "Id": "vintage",
+    "Icon": "\uD83D\uDCFC",
+    "Title": "Vintage",
+    "Category": "FX",
+    "Blurb": "Warm tape character.",
+    "Explanation": "Band-limits the extremes and adds tape-style saturation for a nostalgic, lo-fi warmth.",
+    "Pitch": 0,
+    "Eq": [
+      1,
+      1,
+      0,
+      -2,
+      0
+    ],
+    "Drive": 5,
+    "Exciter": 0,
+    "LowCut": 150,
+    "HighCut": 5500
+  },
+  {
+    "Id": "nasal",
+    "Icon": "\uD83D\uDC43",
+    "Title": "Nasal",
+    "Category": "FX",
+    "Blurb": "Honky midrange.",
+    "Explanation": "Cranks a narrow 1.7 kHz honk for a deliberately nasal, pinched effect.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      2,
+      7,
+      0,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 0
+  },
+  {
+    "Id": "cave",
+    "Icon": "\uD83D\uDD73\uFE0F",
+    "Title": "Cave",
+    "Category": "FX",
+    "Blurb": "Distant and boomy.",
+    "Explanation": "Boosts the lows and rolls off the top so you sound far away in a big, dark stone room.",
+    "Pitch": -1,
+    "Eq": [
+      4,
+      0,
+      -2,
+      -2,
+      0
+    ],
+    "Drive": 0,
+    "Exciter": 0,
+    "LowCut": 0,
+    "HighCut": 3500
+  },
+  {
+    "Id": "intercom",
+    "Icon": "\uD83D\uDEF0\uFE0F",
+    "Title": "Intercom",
+    "Category": "FX",
+    "Blurb": "PA / announcement system.",
+    "Explanation": "A band-limited, gritty midrange like a store or spaceship intercom.",
+    "Pitch": 0,
+    "Eq": [
+      0,
+      1,
+      4,
+      1,
+      0
+    ],
+    "Drive": 4,
+    "Exciter": 0,
+    "LowCut": 400,
+    "HighCut": 3500
+  }
+]

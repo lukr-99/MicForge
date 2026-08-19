@@ -51,14 +51,24 @@ Controls/                  namespace MicForge.Controls
     GrHistory, Spectrogram, and MasonryPanel (column-balancing layout)
 
 ViewModels/                namespace MicForge.ViewModels
-    MainViewModel.cs         the app's central VM (pages, stages, crafting, presets, hotkeys…)
+    MainViewModel.cs         the central VM's core: construction, navigation, devices, transport,
+                             stage ordering, persistence. Split into partials by concern:
+      MainViewModel.Meters.cs       live meter / mic-health / loudness read-outs + per-tick update
+      MainViewModel.Calibration.cs  gate noise-floor learning + auto-calibrate wizard
+      MainViewModel.Crafting.cs     Crafting cards + preview-voice player
+      MainViewModel.Presets.cs      preset dropdown: load/apply/save
+      MainViewModel.Hotkeys.cs      global hotkeys + push-to-talk
+      MainViewModel.History.cs      coalesced undo / redo of the chain
+    StageBuilder.cs          builds the (long, declarative) stage-card list for a DspChain
     StageViewModel.cs        one processing-stage card (+ EqStageViewModel / CompressorStageViewModel)
     ParamViewModel.cs        one labelled slider bound to a get/set
     CraftCard.cs / CraftCardConfig.cs / CraftCatalog.cs   the Crafting macro cards
-    HotkeyViewModel.cs, RelayCommand.cs, ViewModelBase.cs
+    HotkeyViewModel.cs, ViewModelBase.cs
 
 Converters/                namespace MicForge.Converters   (one IValueConverter per file)
-Models/                    namespace MicForge              serializable data (Settings, PresetItem, …)
+Models/                    namespace MicForge              serializable data (PresetItem, EqBandSetting, …)
+    Settings.cs              the persisted DTO (all chain params + app state) + JSON load/save
+    Settings.Mapping.cs      CaptureFrom / ApplyTo — maps the DTO to and from a live DspChain
 Services/                  namespace MicForge              Composition (DI root), Log,
                                                            StartupManager, GlobalHotkeys,
                                                            KeyboardHook, IconFactory, PresetLibrary
@@ -92,12 +102,16 @@ writes are single primitive assignments, so no locking is needed between the two
   `DspChain` holds an ordered `IAudioProcessor[]` and can be reordered at runtime. Adding an
   effect never touches the chain's loop. Shared DSP math lives in `DspMath` / `EnvelopeFollower`.
 - **MVVM (CommunityToolkit)** — `ViewModelBase : ObservableObject`; VMs use `[ObservableProperty]`
-  and `[RelayCommand]` source generators (Observer + Command patterns, generated).
+  and `[RelayCommand]` source generators (Observer + Command patterns, generated — there is no
+  hand-written `RelayCommand`). `MainViewModel` is `partial` so the generated commands compile in.
 - **Template method** — `StageViewModel` is the base card; `EqStageViewModel` /
   `CompressorStageViewModel` specialise it with graph data.
 - **Catalog / library** — `CraftCatalog`, `PresetLibrary`, `VoiceSample`, `BuiltInPresets`,
-  `EqPresets` each own a set of definitions loaded from disk or code.
-- **Factory** — `IconFactory` draws tray/window icons at runtime.
+  `EqPresets` each own a set of definitions. The built-in **presets** (`assets/presets/*.json`)
+  and **Crafting card defaults** (`assets/craftcards.default.json`) ship as JSON data bundled
+  next to the exe — regenerated from a live chain/catalog, not hand-edited constants.
+- **Factory** — `StageBuilder` assembles the stage-card list (title/colour/params) for a chain,
+  keeping the bulk declarations out of `MainViewModel`; `IconFactory` draws tray/window icons.
 - **Macro layer** — Crafting cards are additive deltas summed onto the EQ + Voice Changer +
   Saturation + Exciter + high-pass/low-pass stages (`MainViewModel.ApplyCrafting`).
 
@@ -121,7 +135,7 @@ All user state lives under `%AppData%\MicForge\` so it survives uninstall/reinst
 2. In `Audio/Core/DspChain.cs`: add a property, construct it, and place it in the `_chain`
    array at its default position.
 3. In `Models/Settings.cs`: add persisted fields and wire them in `CaptureFrom` / `ApplyTo`.
-4. In `ViewModels/MainViewModel.BuildStages`: add a `StageViewModel` card (info + params) and
-   include the processor in the `procs` array (same order as the cards are added).
+4. In `ViewModels/StageBuilder.Build`: add a `StageViewModel` card (info + params) and include
+   the processor in the `procs` array (same order as the cards are added).
 
 Existing saved chain orders automatically slot the new stage near its default index.

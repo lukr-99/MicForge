@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.Input;
 using MicForge.Audio;
 
 namespace MicForge.ViewModels;
@@ -30,7 +31,7 @@ public class StageViewModel : ViewModelBase
     // Optional action button (used by Noise Suppression to load an rnnoise.dll).
     public bool ShowAction { get; set; }
     public string ActionText { get; set; }
-    public RelayCommand ActionCommand { get; set; }
+    public IRelayCommand ActionCommand { get; set; }
 
     // Optional secondary toggle (used by the gate for "smart/VAD" mode).
     private Func<bool> _getExtra;

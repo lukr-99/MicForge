@@ -3,6 +3,7 @@ obj/
 *.user
 .vs/
 micforge.json
+*_wpftmp.*
 
 # Installer build artifacts (the compiled setup exe is large; publish it as a Release asset instead)
 installer/*.exe
