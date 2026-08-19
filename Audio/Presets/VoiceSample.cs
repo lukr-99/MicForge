@@ -6,16 +6,6 @@ using NAudio.Wave.SampleProviders;
 
 namespace MicForge.Audio;
 
-/// <summary>One selectable preview voice (a bundled/user WAV, or the synthesised one).</summary>
-public sealed class PreviewSample
-{
-    public PreviewSample(string name, string path) { Name = name; Path = path; }
-    public string Name { get; }
-    public string Path { get; }          // null = synthesised
-    public bool IsSynth => Path == null;
-    public override string ToString() => Name;
-}
-
 /// <summary>
 /// Preview voices for Crafting: bundled recorded clips, user-added WAVs (dropped in or
 /// imported), and a synthesised fallback. Loads any of them as mono float at the engine rate.

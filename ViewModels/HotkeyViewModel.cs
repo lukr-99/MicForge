@@ -5,7 +5,7 @@ using System.Windows.Input;
 namespace MicForge.ViewModels;
 
 /// <summary>One assignable action and its (optional) global hotkey combo.</summary>
-public sealed class HotkeyVm : ViewModelBase
+public sealed class HotkeyViewModel : ViewModelBase
 {
     public string ActionId { get; }
     public string Label { get; }
@@ -24,7 +24,7 @@ public sealed class HotkeyVm : ViewModelBase
     public string SetText => Capturing ? "Press keys…" : "Set";
     public string Display => Format(Modifiers, Vk);
 
-    public HotkeyVm(string actionId, string label, Action invoke, uint modifiers, uint vk)
+    public HotkeyViewModel(string actionId, string label, Action invoke, uint modifiers, uint vk)
     {
         ActionId = actionId;
         Label = label;

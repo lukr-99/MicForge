@@ -6,30 +6,11 @@ using MicForge.Audio;
 
 namespace MicForge;
 
-public sealed class EqBandSetting
-{
-    public bool Enabled { get; set; } = true;
-    public int Type { get; set; }
-    public double Freq { get; set; }
-    public double GainDb { get; set; }
-    public double Q { get; set; }
-}
-
-public sealed class HotkeyBinding
-{
-    public string Action { get; set; }
-    public uint Modifiers { get; set; }
-    public uint Vk { get; set; }
-}
-
-public sealed class CraftCardState
-{
-    public string Id { get; set; }
-    public bool Enabled { get; set; }
-    public double Intensity { get; set; } = 100;
-}
-
-/// <summary>Serializable snapshot of the whole DSP chain plus device selection.</summary>
+/// <summary>
+/// Serializable snapshot of the whole DSP chain plus app-level state (device selection,
+/// stage order, hotkeys, crafting card states, last preset…). Persisted as
+/// <c>%AppData%\MicForge\micforge.json</c> (see <see cref="DefaultPath"/>).
+/// </summary>
 public sealed class Settings
 {
     public string InputDeviceId { get; set; }

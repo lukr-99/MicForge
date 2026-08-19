@@ -43,8 +43,8 @@ public sealed class MainViewModel : ViewModelBase
         OpenLogsCommand = new RelayCommand(OpenLogs);
         ToggleBypassCommand = new RelayCommand(() => Bypassed = !Bypassed);
         ToggleMuteCommand = new RelayCommand(() => Muted = !Muted);
-        SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyVm));
-        ClearHotkeyCommand = new RelayCommand(p => { if (p is HotkeyVm h) { h.Clear(); OnHotkeysChanged(); } });
+        SetHotkeyCommand = new RelayCommand(p => BeginCapture(p as HotkeyViewModel));
+        ClearHotkeyCommand = new RelayCommand(p => { if (p is HotkeyViewModel h) { h.Clear(); OnHotkeysChanged(); } });
         SetPttKeyCommand = new RelayCommand(BeginPttCapture);
         ResetOrderCommand = new RelayCommand(ResetStageOrder);
 
@@ -114,7 +114,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ClearHotkeyCommand { get; }
     public RelayCommand SetPttKeyCommand { get; }
     public RelayCommand ResetOrderCommand { get; }
-    public ObservableCollection<HotkeyVm> Hotkeys { get; } = new();
+    public ObservableCollection<HotkeyViewModel> Hotkeys { get; } = new();
 
     public event Action HotkeysChanged;
     public event Action PttHookChanged;
@@ -140,18 +140,18 @@ public sealed class MainViewModel : ViewModelBase
     private void BuildHotkeys(Settings saved)
     {
         Hotkeys.Clear();
-        Hotkeys.Add(new HotkeyVm("mute", "Mute", () => Muted = !Muted,
+        Hotkeys.Add(new HotkeyViewModel("mute", "Mute", () => Muted = !Muted,
             GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt, 0x4D));       // Ctrl+Alt+M
-        Hotkeys.Add(new HotkeyVm("bypass", "Bypass", () => Bypassed = !Bypassed,
+        Hotkeys.Add(new HotkeyViewModel("bypass", "Bypass", () => Bypassed = !Bypassed,
             GlobalHotkeys.ModControl | GlobalHotkeys.ModAlt, 0x42));       // Ctrl+Alt+B
-        Hotkeys.Add(new HotkeyVm("startstop", "Start / Stop", () => StartStopCommand.Execute(null), 0, 0));
+        Hotkeys.Add(new HotkeyViewModel("startstop", "Start / Stop", () => StartStopCommand.Execute(null), 0, 0));
 
         if (saved?.Hotkeys != null)
             foreach (var b in saved.Hotkeys)
                 Hotkeys.FirstOrDefault(h => h.ActionId == b.Action)?.Assign(b.Modifiers, b.Vk);
     }
 
-    private void BeginCapture(HotkeyVm hk)
+    private void BeginCapture(HotkeyViewModel hk)
     {
         if (hk == null) return;
         foreach (var h in Hotkeys) h.Capturing = false;
@@ -210,7 +210,7 @@ public sealed class MainViewModel : ViewModelBase
         get => _pttVk;
         private set { _pttVk = value; OnPropertyChanged(nameof(PttKeyDisplay)); }
     }
-    public string PttKeyDisplay => _pttVk == 0 ? "Not set" : HotkeyVm.Format(0, _pttVk);
+    public string PttKeyDisplay => _pttVk == 0 ? "Not set" : HotkeyViewModel.Format(0, _pttVk);
 
     private bool _pttHeld;
 
