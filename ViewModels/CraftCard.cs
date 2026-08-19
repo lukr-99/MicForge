@@ -36,6 +36,16 @@ public sealed class CraftCard : ViewModelBase
     public string Blurb { get; }
     public string Explanation { get; }
 
+    /// <summary>Accent colour for this card's category (for a quick visual cue).</summary>
+    public string CategoryColor => Category switch
+    {
+        "Tone" => "#4FA3E3",    // blue
+        "Polish" => "#E3B23C",  // amber
+        "Fun" => "#E36CA0",     // pink
+        "FX" => "#7FB069",      // green
+        _ => "#6C7A89",         // grey
+    };
+
     // Deltas at 100% intensity.
     public double Pitch { get; }      // semitones
     public double[] Eq { get; }       // 5 band gain deltas (low shelf, low-mid, mid, presence, air)
