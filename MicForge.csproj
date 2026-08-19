@@ -38,4 +38,11 @@
     </None>
   </ItemGroup>
 
+  <!-- Bundle the built-in preset snapshots (JSON) next to the exe. -->
+  <ItemGroup>
+    <None Include="assets\presets\*.json" Link="presets\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
