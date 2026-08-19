@@ -25,7 +25,9 @@ public sealed class DspChain
     public NoiseGate Gate { get; }
     public Expander Expander { get; }
     public DeClicker DeClicker { get; }
+    public KeystrokeSuppressor Keystroke { get; }
     public DeReverb DeReverb { get; }
+    public EchoRemover EchoRemover { get; }
     public ParametricEq Eq { get; }
     public Compressor Compressor { get; }
     public MultibandCompressor Multiband { get; }
@@ -62,7 +64,9 @@ public sealed class DspChain
         Gate = new NoiseGate(sampleRate);
         Expander = new Expander(sampleRate);
         DeClicker = new DeClicker(sampleRate);
+        Keystroke = new KeystrokeSuppressor(sampleRate);
         DeReverb = new DeReverb(sampleRate);
+        EchoRemover = new EchoRemover(sampleRate);
         Eq = new ParametricEq(sampleRate);
         Compressor = new Compressor(sampleRate);
         Multiband = new MultibandCompressor(sampleRate);
@@ -80,8 +84,8 @@ public sealed class DspChain
         _chain = new IAudioProcessor[]
         {
             InputGain, InputAgc, HighPass, Hum, DePlosive, Suppressor, Gate, Expander, DeClicker,
-            DeReverb, Eq, Compressor, Multiband, DeEsser, Saturation, Exciter, VoiceChanger,
-            ComfortNoise, Limiter, OutputGain, Loudness
+            Keystroke, DeReverb, EchoRemover, Eq, Compressor, Multiband, DeEsser, Saturation,
+            Exciter, VoiceChanger, ComfortNoise, Limiter, OutputGain, Loudness
         };
         _order = _chain;
     }

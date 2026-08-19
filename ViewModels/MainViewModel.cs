@@ -631,7 +631,7 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.5.0 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.6.0 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
@@ -764,6 +764,20 @@ public sealed class MainViewModel : ViewModelBase
             "How hard a detected click is ducked.");
         Stages.Add(declick);
 
+        var keys = new StageViewModel("Keystroke Suppressor", "#9AA06C", () => c.Keystroke.Enabled, v => c.Keystroke.Enabled = v)
+        {
+            Info = "Knocks down mechanical keyboard clicks and clacks. It watches a high band for the sharp spike a key press makes and briefly ducks it, leaving your voice (which rises more gradually) intact. Tune the detector frequency to your keyboard and the sensitivity so it catches clacks without chewing consonants."
+        };
+        keys.Add("Detect freq", 1500, 6000, 100, () => c.Keystroke.DetectFreq, v => c.Keystroke.DetectFreq = v, "0", " Hz",
+            "The band where the click is detected. Higher for sharper/clickier boards, lower for thockier ones.");
+        keys.Add("Sensitivity", 3, 18, 0.5, () => c.Keystroke.Sensitivity, v => c.Keystroke.Sensitivity = v, "0.0", " dB",
+            "How far a spike must jump above the running average to count as a click. Lower catches more clicks (and risks softening consonants).");
+        keys.Add("Strength", 0, 100, 1, () => c.Keystroke.Strength, v => c.Keystroke.Strength = v, "0", " %",
+            "How hard a detected click is ducked.");
+        keys.Add("Release", 10, 200, 5, () => c.Keystroke.ReleaseMs, v => c.Keystroke.ReleaseMs = v, "0", " ms",
+            "How quickly the level recovers after a click.");
+        Stages.Add(keys);
+
         var derev = new StageViewModel("De-Reverb", "#6CA0B0", () => c.DeReverb.Enabled, v => c.DeReverb.Enabled = v)
         {
             Info = "Tightens up a boomy or echoey room by pulling down the reverb tail — the energy lingering after each word — while keeping the direct voice. A light reducer, not a full acoustic dereverb."
@@ -773,6 +787,16 @@ public sealed class MainViewModel : ViewModelBase
         derev.Add("Decay", 40, 400, 10, () => c.DeReverb.DecayMs, v => c.DeReverb.DecayMs = v, "0", " ms",
             "The room's tail time — match it to how long echoes ring out.");
         Stages.Add(derev);
+
+        var echo = new StageViewModel("Echo Remover", "#6C9AB0", () => c.EchoRemover.Enabled, v => c.EchoRemover.Enabled = v)
+        {
+            Info = "Cancels a distinct echo of your own voice — a slap-back off a wall, or your speakers bleeding back into the mic. An adaptive filter learns the delayed copy and subtracts it. Set Delay to roughly the echo time and raise Strength until the echo drops. (Not full acoustic echo cancellation — it has no reference to the far-end audio.)"
+        };
+        echo.Add("Delay", 20, 300, 5, () => c.EchoRemover.DelayMs, v => c.EchoRemover.DelayMs = v, "0", " ms",
+            "Roughly how long after your voice the echo arrives. Sweep this until the echo locks on and drops.");
+        echo.Add("Strength", 0, 100, 1, () => c.EchoRemover.Strength, v => c.EchoRemover.Strength = v, "0", " %",
+            "How much of the estimated echo to remove.");
+        Stages.Add(echo);
 
         var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
             () => c.Eq.Enabled, v => c.Eq.Enabled = v)
@@ -925,8 +949,8 @@ public sealed class MainViewModel : ViewModelBase
         var procs = new IAudioProcessor[]
         {
             c.InputGain, c.InputAgc, c.HighPass, c.Hum, c.DePlosive, c.Suppressor, c.Gate, c.Expander, c.DeClicker,
-            c.DeReverb, c.Eq, c.Compressor, c.Multiband, c.DeEsser, c.Saturation, c.Exciter, c.VoiceChanger,
-            c.ComfortNoise, c.Limiter, c.OutputGain, c.Loudness
+            c.Keystroke, c.DeReverb, c.EchoRemover, c.Eq, c.Compressor, c.Multiband, c.DeEsser, c.Saturation,
+            c.Exciter, c.VoiceChanger, c.ComfortNoise, c.Limiter, c.OutputGain, c.Loudness
         };
         for (int i = 0; i < Stages.Count && i < procs.Length; i++) Stages[i].Processor = procs[i];
     }
@@ -976,7 +1000,11 @@ public sealed class MainViewModel : ViewModelBase
                 var s = current.FirstOrDefault(x => x.ProcessorId == id && !Stages.Contains(x));
                 if (s != null) Stages.Add(s);
             }
-            foreach (var s in current) if (!Stages.Contains(s)) Stages.Add(s);
+            // Stages new since the order was saved: slot them in near their default position
+            // (not at the very end), so e.g. click/echo removal lands early where it belongs.
+            foreach (var s in current)
+                if (!Stages.Contains(s))
+                    Stages.Insert(Math.Min(current.IndexOf(s), Stages.Count), s);
         }
         RenumberAndApplyChain(save: false);
     }

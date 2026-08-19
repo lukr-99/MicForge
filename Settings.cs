@@ -133,6 +133,16 @@ public sealed class Settings
     public double ComfortNoiseLevelDb { get; set; } = -60;
     public double ComfortNoiseToneHz { get; set; } = 2000;
 
+    public bool KeystrokeEnabled { get; set; }
+    public double KeystrokeDetectFreq { get; set; } = 2800;
+    public double KeystrokeSensitivity { get; set; } = 8;
+    public double KeystrokeStrength { get; set; } = 70;
+    public double KeystrokeReleaseMs { get; set; } = 45;
+
+    public bool EchoEnabled { get; set; }
+    public double EchoDelayMs { get; set; } = 120;
+    public double EchoStrength { get; set; } = 60;
+
     // App-level (not part of the DSP chain).
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
@@ -229,7 +239,15 @@ public sealed class Settings
             ExciterAmount = c.Exciter.Amount,
             ComfortNoiseEnabled = c.ComfortNoise.Enabled,
             ComfortNoiseLevelDb = c.ComfortNoise.LevelDb,
-            ComfortNoiseToneHz = c.ComfortNoise.ToneHz
+            ComfortNoiseToneHz = c.ComfortNoise.ToneHz,
+            KeystrokeEnabled = c.Keystroke.Enabled,
+            KeystrokeDetectFreq = c.Keystroke.DetectFreq,
+            KeystrokeSensitivity = c.Keystroke.Sensitivity,
+            KeystrokeStrength = c.Keystroke.Strength,
+            KeystrokeReleaseMs = c.Keystroke.ReleaseMs,
+            EchoEnabled = c.EchoRemover.Enabled,
+            EchoDelayMs = c.EchoRemover.DelayMs,
+            EchoStrength = c.EchoRemover.Strength
         };
         foreach (var b in c.Eq.Bands)
             s.EqBands.Add(new EqBandSetting
@@ -321,6 +339,14 @@ public sealed class Settings
         c.ComfortNoise.Enabled = ComfortNoiseEnabled;
         c.ComfortNoise.LevelDb = ComfortNoiseLevelDb;
         c.ComfortNoise.ToneHz = ComfortNoiseToneHz;
+        c.Keystroke.Enabled = KeystrokeEnabled;
+        c.Keystroke.DetectFreq = KeystrokeDetectFreq;
+        c.Keystroke.Sensitivity = KeystrokeSensitivity;
+        c.Keystroke.Strength = KeystrokeStrength;
+        c.Keystroke.ReleaseMs = KeystrokeReleaseMs;
+        c.EchoRemover.Enabled = EchoEnabled;
+        c.EchoRemover.DelayMs = EchoDelayMs;
+        c.EchoRemover.Strength = EchoStrength;
 
         for (int i = 0; i < EqBands.Count && i < c.Eq.Bands.Count; i++)
         {
