@@ -11,9 +11,9 @@
     <AssemblyName>MicForge</AssemblyName>
     <RootNamespace>MicForge</RootNamespace>
     <ApplicationIcon>MicForge.ico</ApplicationIcon>
-    <Version>1.3.3</Version>
-    <FileVersion>1.3.3.0</FileVersion>
-    <AssemblyVersion>1.3.3.0</AssemblyVersion>
+    <Version>1.3.4</Version>
+    <FileVersion>1.3.4.0</FileVersion>
+    <AssemblyVersion>1.3.4.0</AssemblyVersion>
     <Product>MicForge</Product>
     <Company>lukr-99</Company>
     <Authors>lukr-99</Authors>
