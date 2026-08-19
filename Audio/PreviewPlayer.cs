@@ -14,21 +14,22 @@ namespace MicForge.Audio;
 public sealed class PreviewPlayer : IDisposable
 {
     private readonly DspChain _chain;
-    private readonly float[] _sample;
+    private float[] _sample = Array.Empty<float>();
     private WasapiOut _out;
 
     public bool Playing { get; private set; }
 
-    public PreviewPlayer(DspChain chain, float[] sample)
+    public PreviewPlayer(DspChain chain)
     {
         _chain = chain;
-        _sample = sample;
     }
 
-    /// <summary>Start playback to the given device id (falls back to the default render device).</summary>
-    public void Start(string deviceId)
+    /// <summary>Start playback of the given sample to the device id (falls back to default render).</summary>
+    public void Start(string deviceId, float[] sample)
     {
         Stop();
+        _sample = sample ?? Array.Empty<float>();
+        if (_sample.Length == 0) return;
 
         using var en = new MMDeviceEnumerator();
         MMDevice device = null;

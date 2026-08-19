@@ -20,5 +20,6 @@ The CC BY-NC 4.0 license permits noncommercial use with attribution, which
 matches MicForge's own PolyForm Noncommercial 1.0.0 license. Only a short
 excerpt is included, purely as a built-in test/preview signal.
 
-To use your own preview voice instead, drop a WAV at:
-  %AppData%\MicForge\voice-sample.wav
+To add your own preview voices, use "Add…" on the Crafting tab, or drop WAV
+files into:
+  %AppData%\MicForge\samples\

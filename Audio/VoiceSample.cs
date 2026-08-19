@@ -6,56 +6,91 @@ using NAudio.Wave.SampleProviders;
 
 namespace MicForge.Audio;
 
+/// <summary>One selectable preview voice (a bundled/user WAV, or the synthesised one).</summary>
+public sealed class PreviewSample
+{
+    public PreviewSample(string name, string path) { Name = name; Path = path; }
+    public string Name { get; }
+    public string Path { get; }          // null = synthesised
+    public bool IsSynth => Path == null;
+    public override string ToString() => Name;
+}
+
 /// <summary>
-/// Provides the looping mono preview sample for Crafting. Prefers a real recorded voice
-/// (a bundled CC BY-NC Harvard-sentences excerpt, or a user-supplied WAV override), and
-/// falls back to a synthesised vowel babble if neither is available.
+/// Preview voices for Crafting: bundled recorded clips, user-added WAVs (dropped in or
+/// imported), and a synthesised fallback. Loads any of them as mono float at the engine rate.
 /// </summary>
 public static class VoiceSample
 {
-    /// <summary>Load the preview voice as mono float at the given rate; fall back to synthesis.</summary>
-    public static float[] LoadOrGenerate(int sampleRate)
+    public static string UserFolder
     {
-        // 1) user override, 2) the bundled clip next to the exe.
-        var candidates = new[]
+        get
         {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MicForge", "voice-sample.wav"),
-            Path.Combine(AppContext.BaseDirectory, "voice-sample.wav"),
-        };
-        foreach (var path in candidates)
+            var d = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MicForge", "samples");
+            try { Directory.CreateDirectory(d); } catch { }
+            return d;
+        }
+    }
+
+    private static string BuiltInFolder => Path.Combine(AppContext.BaseDirectory, "samples");
+
+    /// <summary>Available preview voices: bundled first, then the user's, then synthesised.</summary>
+    public static List<PreviewSample> List()
+    {
+        var list = new List<PreviewSample>();
+
+        void AddFrom(string dir, bool user)
         {
             try
             {
-                if (File.Exists(path))
-                {
-                    var s = LoadWav(path, sampleRate);
-                    if (s is { Length: > 0 }) return s;
-                }
+                if (!Directory.Exists(dir)) return;
+                foreach (var f in Directory.GetFiles(dir, "*.wav"))
+                    list.Add(new PreviewSample(Path.GetFileNameWithoutExtension(f) + (user ? " (yours)" : ""), f));
             }
-            catch { /* fall through */ }
+            catch { }
+        }
+
+        AddFrom(BuiltInFolder, false);
+        AddFrom(UserFolder, true);
+        list.Add(new PreviewSample("Synthesized", null));
+        return list;
+    }
+
+    /// <summary>Load a preview voice as mono float at the given rate (synthesises on failure).</summary>
+    public static float[] LoadFor(PreviewSample sample, int sampleRate)
+    {
+        if (sample != null && !sample.IsSynth)
+        {
+            try
+            {
+                var s = LoadFile(sample.Path, sampleRate);
+                if (s is { Length: > 0 }) return s;
+            }
+            catch { /* fall back to synthesis */ }
         }
         return Generate(sampleRate);
     }
 
-    private static float[] LoadWav(string path, int sampleRate)
+    public static float[] LoadFile(string path, int sampleRate)
     {
         using var reader = new AudioFileReader(path);
         ISampleProvider sp = reader;
         if (reader.WaveFormat.Channels == 2) sp = new StereoToMonoSampleProvider(sp);
         if (reader.WaveFormat.SampleRate != sampleRate) sp = new WdlResamplingSampleProvider(sp, sampleRate);
 
-        var list = new List<float>(sampleRate * 12);
+        var list = new List<float>(sampleRate * 16);
         var buf = new float[sampleRate];
         int n;
         while ((n = sp.Read(buf, 0, buf.Length)) > 0)
         {
             for (int i = 0; i < n; i++) list.Add(buf[i]);
-            if (list.Count > sampleRate * 30) break;   // cap at 30 s
+            if (list.Count > sampleRate * 40) break;   // cap at 40 s
         }
         return list.ToArray();
     }
 
-    // Vowel formant tables (F1, F2, F3 in Hz): a, e, i, o, u.
+    // ---- synthesised fallback voice (formant vowel babble) ----
     private static readonly double[][] Vowels =
     {
         new[] { 700.0, 1220, 2600 },
@@ -80,8 +115,8 @@ public static class VoiceSample
         }
 
         var rng = new Random(1234);
-        const double sylLen = 0.34;   // seconds per syllable (incl. a short gap)
-        const double onLen = 0.26;    // voiced portion of each syllable
+        const double sylLen = 0.34;
+        const double onLen = 0.26;
         int vi = 0, lastSi = -1;
         double phase = 0, f0 = 110;
 
@@ -95,10 +130,9 @@ public static class VoiceSample
                 lastSi = si;
                 vi = (vi + 1) % Vowels.Length;
                 SetVowel(vi);
-                f0 = 100 + rng.NextDouble() * 45;   // vary pitch per syllable
+                f0 = 100 + rng.NextDouble() * 45;
             }
 
-            // Glottal sawtooth source with a little vibrato.
             double vib = 1.0 + 0.02 * Math.Sin(2 * Math.PI * 5 * t);
             phase += f0 * vib / sampleRate;
             if (phase >= 1) phase -= 1;
@@ -106,14 +140,11 @@ public static class VoiceSample
 
             double voiced = f1.Process((float)src) + 0.7 * f2.Process((float)src) + 0.4 * f3.Process((float)src);
 
-            // Per-syllable Hann amplitude envelope (silent in the gap).
             double sp = t - si * sylLen;
             double env = sp < onLen ? 0.5 - 0.5 * Math.Cos(2 * Math.PI * (sp / onLen)) : 0.0;
-
             outp[i] = (float)(voiced * env);
         }
 
-        // Normalise to about -12 dBFS.
         float peak = 1e-6f;
         for (int i = 0; i < n; i++) peak = Math.Max(peak, Math.Abs(outp[i]));
         float g = (float)(Math.Pow(10, -12 / 20.0) / peak);

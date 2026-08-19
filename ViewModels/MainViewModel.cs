@@ -35,6 +35,7 @@ public sealed class MainViewModel : ViewModelBase
         ResetCraftingCommand = new RelayCommand(ResetCrafting);
         ReloadCraftCommand = new RelayCommand(ReloadCraftCards);
         OpenCraftFileCommand = new RelayCommand(OpenCraftFile);
+        AddPreviewSampleCommand = new RelayCommand(AddPreviewSample);
         ResetLoudnessCommand = new RelayCommand(() => _engine.Chain.Loudness.ResetMeasurement());
         UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
         RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
@@ -66,6 +67,7 @@ public sealed class MainViewModel : ViewModelBase
         BuildStages();
         ApplyStageOrder(saved?.StageOrder);
         RestoreCrafting(saved);
+        LoadPreviewSamples();
         BuildHotkeys(saved);
         if (_pttEnabled) ApplyPttState();
         if (_followDefaultInput) ApplyFollowDefault();
@@ -99,6 +101,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ResetCraftingCommand { get; }
     public RelayCommand ReloadCraftCommand { get; }
     public RelayCommand OpenCraftFileCommand { get; }
+    public RelayCommand AddPreviewSampleCommand { get; }
     public RelayCommand ResetLoudnessCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand RedoCommand { get; }
@@ -576,7 +579,7 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.3.4 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.3.5 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
@@ -1083,6 +1086,23 @@ public sealed class MainViewModel : ViewModelBase
 
     // ---- crafting preview (play a standard voice sample through the chain) ----
     private PreviewPlayer _preview;
+    public ObservableCollection<PreviewSample> PreviewSamples { get; } = new();
+
+    private PreviewSample _selectedPreviewSample;
+    public PreviewSample SelectedPreviewSample
+    {
+        get => _selectedPreviewSample;
+        set { if (Set(ref _selectedPreviewSample, value) && _previewActive) RestartPreview(); }
+    }
+
+    private void LoadPreviewSamples()
+    {
+        PreviewSamples.Clear();
+        foreach (var s in VoiceSample.List()) PreviewSamples.Add(s);
+        _selectedPreviewSample = PreviewSamples.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedPreviewSample));
+    }
+
     private bool _previewActive;
     public bool PreviewSampleActive
     {
@@ -1097,10 +1117,11 @@ public sealed class MainViewModel : ViewModelBase
     private void StartSamplePreview()
     {
         if (_engine.Running || _engine.Reconnecting) _engine.Stop();
-        _preview ??= new PreviewPlayer(_engine.Chain, VoiceSample.LoadOrGenerate(AudioEngine.SampleRate));
+        _preview ??= new PreviewPlayer(_engine.Chain);
         try
         {
-            _preview.Start(SelectedMonitorDevice?.Id);
+            var samples = VoiceSample.LoadFor(_selectedPreviewSample, AudioEngine.SampleRate);
+            _preview.Start(SelectedMonitorDevice?.Id, samples);
         }
         catch (Exception ex)
         {
@@ -1109,6 +1130,29 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(PreviewSampleActive));
             MessageBox.Show("Could not start the preview on your output device.", "MicForge");
         }
+    }
+
+    private void RestartPreview()
+    {
+        _preview?.Stop();
+        StartSamplePreview();
+    }
+
+    private void AddPreviewSample()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        { Filter = "WAV audio (*.wav)|*.wav", Title = "Add a preview voice" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var dest = Path.Combine(VoiceSample.UserFolder, Path.GetFileName(dlg.FileName));
+            File.Copy(dlg.FileName, dest, overwrite: true);
+            LoadPreviewSamples();
+            var added = PreviewSamples.FirstOrDefault(s =>
+                !s.IsSynth && string.Equals(s.Path, dest, StringComparison.OrdinalIgnoreCase));
+            if (added != null) SelectedPreviewSample = added;
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
     // ---- undo / redo (coalesced snapshots of the whole chain) ----
