@@ -1,0 +1,24 @@
+MicForge Crafting preview sample: voice-sample.wav
+==================================================
+
+This clip is a trimmed excerpt (~11 seconds, downconverted to 16-bit mono)
+of a public speech-corpus recording, used as the default "sample voice" for
+previewing effects on the Crafting tab.
+
+Source:  "Speech corpus - example of raw audio: HARVARD list 01.wav"
+Author:  Philippa Demonte (ORCID 0000-0001-5810-2737), University of Salford
+DOI:     https://doi.org/10.17866/rd.salford.7857770.v1
+License: Creative Commons Attribution-NonCommercial 4.0 International
+         (CC BY-NC 4.0) — https://creativecommons.org/licenses/by-nc/4.0/
+
+Citation:
+  Demonte, Philippa (2019). Speech corpus - example of raw audio:
+  HARVARD list 01.wav. University of Salford. Media.
+  https://doi.org/10.17866/rd.salford.7857770.v1
+
+The CC BY-NC 4.0 license permits noncommercial use with attribution, which
+matches MicForge's own PolyForm Noncommercial 1.0.0 license. Only a short
+excerpt is included, purely as a built-in test/preview signal.
+
+To use your own preview voice instead, drop a WAV at:
+  %AppData%\MicForge\voice-sample.wav

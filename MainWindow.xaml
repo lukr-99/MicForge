@@ -504,7 +504,7 @@
                         <ctrl:EqGraph Height="180" Model="{Binding EqStage}" IsHitTestVisible="False"/>
                         <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,8,0,0"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   Text="Plays a built-in voice through your effects so you can hear the crafted result without talking (uses your monitor device, or the default output). To use your own voice instead, press Start on the Processor tab with Monitoring on."/>
+                                   Text="Plays a real recorded voice through your effects so you can hear the crafted result without talking (uses your monitor device, or the default output). Drop your own clip at %AppData%\MicForge\voice-sample.wav to swap it. To hear it on your own voice, press Start on the Processor tab with Monitoring on."/>
                     </StackPanel>
                 </Border>
 

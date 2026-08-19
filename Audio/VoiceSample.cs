@@ -1,15 +1,60 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace MicForge.Audio;
 
 /// <summary>
-/// Generates a short, looping, synthetic "voice" — a formant-synthesised vowel babble with
-/// natural pitch and syllable movement. It isn't real speech, but it responds to EQ, pitch,
-/// saturation, exciter and the rest exactly like a voice does, so it makes a consistent
-/// reference for previewing Crafting without having to talk.
+/// Provides the looping mono preview sample for Crafting. Prefers a real recorded voice
+/// (a bundled CC BY-NC Harvard-sentences excerpt, or a user-supplied WAV override), and
+/// falls back to a synthesised vowel babble if neither is available.
 /// </summary>
 public static class VoiceSample
 {
+    /// <summary>Load the preview voice as mono float at the given rate; fall back to synthesis.</summary>
+    public static float[] LoadOrGenerate(int sampleRate)
+    {
+        // 1) user override, 2) the bundled clip next to the exe.
+        var candidates = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MicForge", "voice-sample.wav"),
+            Path.Combine(AppContext.BaseDirectory, "voice-sample.wav"),
+        };
+        foreach (var path in candidates)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    var s = LoadWav(path, sampleRate);
+                    if (s is { Length: > 0 }) return s;
+                }
+            }
+            catch { /* fall through */ }
+        }
+        return Generate(sampleRate);
+    }
+
+    private static float[] LoadWav(string path, int sampleRate)
+    {
+        using var reader = new AudioFileReader(path);
+        ISampleProvider sp = reader;
+        if (reader.WaveFormat.Channels == 2) sp = new StereoToMonoSampleProvider(sp);
+        if (reader.WaveFormat.SampleRate != sampleRate) sp = new WdlResamplingSampleProvider(sp, sampleRate);
+
+        var list = new List<float>(sampleRate * 12);
+        var buf = new float[sampleRate];
+        int n;
+        while ((n = sp.Read(buf, 0, buf.Length)) > 0)
+        {
+            for (int i = 0; i < n; i++) list.Add(buf[i]);
+            if (list.Count > sampleRate * 30) break;   // cap at 30 s
+        }
+        return list.ToArray();
+    }
+
     // Vowel formant tables (F1, F2, F3 in Hz): a, e, i, o, u.
     private static readonly double[][] Vowels =
     {
