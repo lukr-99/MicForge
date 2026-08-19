@@ -683,6 +683,20 @@ public sealed class MainViewModel : ViewModelBase
         }
         Stages.Add(gate);
 
+        var expander = new StageViewModel("Expander", "#8AB06C", () => c.Expander.Enabled, v => c.Expander.Enabled = v)
+        {
+            Info = "A gentler alternative to the gate: instead of slamming shut, it turns quiet sounds (room tone, bleed) down gradually once they fall below the threshold."
+        };
+        expander.Add("Threshold", -80, 0, 1, () => c.Expander.ThresholdDb, v => c.Expander.ThresholdDb = v, "0", " dB",
+            "Below this level the signal starts to be turned down.");
+        expander.Add("Ratio", 1, 8, 0.5, () => c.Expander.Ratio, v => c.Expander.Ratio = v, "0.0", ":1",
+            "How aggressively quiet parts are reduced. Higher is closer to a hard gate.");
+        expander.Add("Release", 20, 800, 10, () => c.Expander.ReleaseMs, v => c.Expander.ReleaseMs = v, "0", " ms",
+            "How quickly it recovers as your level comes back up.");
+        expander.Add("Range", -60, 0, 2, () => c.Expander.RangeDb, v => c.Expander.RangeDb = v, "0", " dB",
+            "The most it will attenuate.");
+        Stages.Add(expander);
+
         var declick = new StageViewModel("De-Click", "#B08A6C", () => c.DeClicker.Enabled, v => c.DeClicker.Enabled = v)
         {
             Info = "Reduces mouth clicks and lip-smacks — the little tick sounds between words — by spotting fast high-frequency spikes and briefly ducking the high band."
@@ -694,6 +708,16 @@ public sealed class MainViewModel : ViewModelBase
         declick.Add("Strength", 0, 100, 1, () => c.DeClicker.Strength, v => c.DeClicker.Strength = v, "0", " %",
             "How hard a detected click is ducked.");
         Stages.Add(declick);
+
+        var derev = new StageViewModel("De-Reverb", "#6CA0B0", () => c.DeReverb.Enabled, v => c.DeReverb.Enabled = v)
+        {
+            Info = "Tightens up a boomy or echoey room by pulling down the reverb tail — the energy lingering after each word — while keeping the direct voice. A light reducer, not a full acoustic dereverb."
+        };
+        derev.Add("Amount", 0, 100, 1, () => c.DeReverb.Amount, v => c.DeReverb.Amount = v, "0", " %",
+            "How hard the room tail is suppressed.");
+        derev.Add("Decay", 40, 400, 10, () => c.DeReverb.DecayMs, v => c.DeReverb.DecayMs = v, "0", " ms",
+            "The room's tail time — match it to how long echoes ring out.");
+        Stages.Add(derev);
 
         var eq = new EqStageViewModel(c.Eq, c, AudioEngine.SampleRate, "#2EC4B6",
             () => c.Eq.Enabled, v => c.Eq.Enabled = v)
@@ -738,6 +762,26 @@ public sealed class MainViewModel : ViewModelBase
             "Adds level back after compression to restore loudness.");
         Stages.Add(comp);
 
+        var mb = new StageViewModel("Multiband", "#D39A5F", () => c.Multiband.Enabled, v => c.Multiband.Enabled = v)
+        {
+            Info = "Compresses the low, mid and high bands separately, so you can tame boomy lows, honky mids and harsh highs independently for a controlled, broadcast-style sound."
+        };
+        mb.Add("Low/mid split", 100, 800, 10, () => c.Multiband.CrossLow, v => c.Multiband.CrossLow = v, "0", " Hz",
+            "Crossover frequency between the low and mid bands.");
+        mb.Add("Mid/high split", 1500, 8000, 100, () => c.Multiband.CrossHigh, v => c.Multiband.CrossHigh = v, "0", " Hz",
+            "Crossover frequency between the mid and high bands.");
+        mb.Add("Low thr", -48, 0, 1, () => c.Multiband.ThreshLowDb, v => c.Multiband.ThreshLowDb = v, "0", " dB",
+            "Compression threshold for the low band.");
+        mb.Add("Mid thr", -48, 0, 1, () => c.Multiband.ThreshMidDb, v => c.Multiband.ThreshMidDb = v, "0", " dB",
+            "Compression threshold for the mid band.");
+        mb.Add("High thr", -48, 0, 1, () => c.Multiband.ThreshHighDb, v => c.Multiband.ThreshHighDb = v, "0", " dB",
+            "Compression threshold for the high band.");
+        mb.Add("Ratio", 1, 12, 0.5, () => c.Multiband.Ratio, v => c.Multiband.Ratio = v, "0.0", ":1",
+            "Compression ratio applied to every band.");
+        mb.Add("Makeup", 0, 18, 0.5, () => c.Multiband.MakeupDb, v => c.Multiband.MakeupDb = v, "0.0", " dB",
+            "Level added back after compression.");
+        Stages.Add(mb);
+
         var de = new StageViewModel("De-Esser", "#E36CA0", () => c.DeEsser.Enabled, v => c.DeEsser.Enabled = v)
         {
             Info = "Tames harsh 'sss' and 'sh' sibilance by compressing only the high sibilant band, so bright mics don't sound spitty."
@@ -761,6 +805,16 @@ public sealed class MainViewModel : ViewModelBase
             "Blend between the dry signal and the saturated signal.");
         Stages.Add(sat);
 
+        var exc = new StageViewModel("Exciter", "#E3C85F", () => c.Exciter.Enabled, v => c.Exciter.Enabled = v)
+        {
+            Info = "Generates brand-new high harmonics to add air, sparkle and presence — a livelier top end than just boosting EQ. Keep it subtle."
+        };
+        exc.Add("Frequency", 1500, 8000, 100, () => c.Exciter.Frequency, v => c.Exciter.Frequency = v, "0", " Hz",
+            "Harmonics are generated above this frequency.");
+        exc.Add("Amount", 0, 100, 1, () => c.Exciter.Amount, v => c.Exciter.Amount = v, "0", " %",
+            "How much of the generated sparkle to blend in.");
+        Stages.Add(exc);
+
         var voice = new StageViewModel("Voice Changer", "#9B6CE3", () => c.VoiceChanger.Enabled, v => c.VoiceChanger.Enabled = v)
         {
             Info = "Shifts your pitch up or down in real time — deep villain, chipmunk, or a subtle disguise. 0 semitones passes through untouched; ±12 is a full octave. (Also driven by the Crafting tab.)"
@@ -770,6 +824,16 @@ public sealed class MainViewModel : ViewModelBase
         voice.Add("Mix", 0, 100, 1, () => c.VoiceChanger.Mix, v => c.VoiceChanger.Mix = v, "0", " %",
             "Blend between your natural voice and the shifted voice.");
         Stages.Add(voice);
+
+        var cn = new StageViewModel("Comfort Noise", "#7C8AA0", () => c.ComfortNoise.Enabled, v => c.ComfortNoise.Enabled = v)
+        {
+            Info = "Fills gate/expander silence with a faint, soft noise bed so callers don't think you dropped off. It fades in only when you're not speaking, so it never muddies your voice."
+        };
+        cn.Add("Level", -80, -40, 1, () => c.ComfortNoise.LevelDb, v => c.ComfortNoise.LevelDb = v, "0", " dB",
+            "How loud the noise bed sits. Keep it just audible.");
+        cn.Add("Tone", 500, 6000, 100, () => c.ComfortNoise.ToneHz, v => c.ComfortNoise.ToneHz = v, "0", " Hz",
+            "Softens the hiss — lower is duller and warmer.");
+        Stages.Add(cn);
 
         var lim = new StageViewModel("Limiter", "#E5543B", () => c.Limiter.Enabled, v => c.Limiter.Enabled = v)
         {
@@ -805,8 +869,9 @@ public sealed class MainViewModel : ViewModelBase
         // Map each card to its processor (built in the chain's default order).
         var procs = new IAudioProcessor[]
         {
-            c.InputGain, c.InputAgc, c.HighPass, c.Hum, c.DePlosive, c.Suppressor, c.Gate, c.DeClicker,
-            c.Eq, c.Compressor, c.DeEsser, c.Saturation, c.VoiceChanger, c.Limiter, c.OutputGain, c.Loudness
+            c.InputGain, c.InputAgc, c.HighPass, c.Hum, c.DePlosive, c.Suppressor, c.Gate, c.Expander, c.DeClicker,
+            c.DeReverb, c.Eq, c.Compressor, c.Multiband, c.DeEsser, c.Saturation, c.Exciter, c.VoiceChanger,
+            c.ComfortNoise, c.Limiter, c.OutputGain, c.Loudness
         };
         for (int i = 0; i < Stages.Count && i < procs.Length; i++) Stages[i].Processor = procs[i];
     }

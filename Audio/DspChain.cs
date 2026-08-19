@@ -23,12 +23,17 @@ public sealed class DspChain
     public DePlosive DePlosive { get; }
     public NoiseSuppressor Suppressor { get; }
     public NoiseGate Gate { get; }
+    public Expander Expander { get; }
     public DeClicker DeClicker { get; }
+    public DeReverb DeReverb { get; }
     public ParametricEq Eq { get; }
     public Compressor Compressor { get; }
+    public MultibandCompressor Multiband { get; }
     public DeEsser DeEsser { get; }
     public Saturation Saturation { get; }
+    public Exciter Exciter { get; }
     public VoiceChanger VoiceChanger { get; }
+    public ComfortNoise ComfortNoise { get; }
     public Limiter Limiter { get; }
     public GainStage OutputGain { get; }
     public LoudnessProcessor Loudness { get; }
@@ -55,12 +60,17 @@ public sealed class DspChain
         DePlosive = new DePlosive(sampleRate);
         Suppressor = new NoiseSuppressor();
         Gate = new NoiseGate(sampleRate);
+        Expander = new Expander(sampleRate);
         DeClicker = new DeClicker(sampleRate);
+        DeReverb = new DeReverb(sampleRate);
         Eq = new ParametricEq(sampleRate);
         Compressor = new Compressor(sampleRate);
+        Multiband = new MultibandCompressor(sampleRate);
         DeEsser = new DeEsser(sampleRate);
         Saturation = new Saturation();
+        Exciter = new Exciter(sampleRate);
         VoiceChanger = new VoiceChanger(sampleRate);
+        ComfortNoise = new ComfortNoise(sampleRate);
         Limiter = new Limiter(sampleRate);
         OutputGain = new GainStage("Output Gain");
         Loudness = new LoudnessProcessor(sampleRate);
@@ -69,8 +79,9 @@ public sealed class DspChain
 
         _chain = new IAudioProcessor[]
         {
-            InputGain, InputAgc, HighPass, Hum, DePlosive, Suppressor, Gate, DeClicker,
-            Eq, Compressor, DeEsser, Saturation, VoiceChanger, Limiter, OutputGain, Loudness
+            InputGain, InputAgc, HighPass, Hum, DePlosive, Suppressor, Gate, Expander, DeClicker,
+            DeReverb, Eq, Compressor, Multiband, DeEsser, Saturation, Exciter, VoiceChanger,
+            ComfortNoise, Limiter, OutputGain, Loudness
         };
         _order = _chain;
     }

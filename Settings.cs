@@ -106,6 +106,33 @@ public sealed class Settings
     public double VoiceSemitones { get; set; }
     public double VoiceMix { get; set; } = 100;
 
+    public bool ExpanderEnabled { get; set; }
+    public double ExpanderThresholdDb { get; set; } = -45;
+    public double ExpanderRatio { get; set; } = 2.5;
+    public double ExpanderReleaseMs { get; set; } = 150;
+    public double ExpanderRangeDb { get; set; } = -24;
+
+    public bool DeReverbEnabled { get; set; }
+    public double DeReverbAmount { get; set; } = 50;
+    public double DeReverbDecayMs { get; set; } = 150;
+
+    public bool MultibandEnabled { get; set; }
+    public double MbCrossLow { get; set; } = 250;
+    public double MbCrossHigh { get; set; } = 3000;
+    public double MbThreshLowDb { get; set; } = -24;
+    public double MbThreshMidDb { get; set; } = -20;
+    public double MbThreshHighDb { get; set; } = -22;
+    public double MbRatio { get; set; } = 3;
+    public double MbMakeupDb { get; set; }
+
+    public bool ExciterEnabled { get; set; }
+    public double ExciterFreq { get; set; } = 3000;
+    public double ExciterAmount { get; set; } = 25;
+
+    public bool ComfortNoiseEnabled { get; set; }
+    public double ComfortNoiseLevelDb { get; set; } = -60;
+    public double ComfortNoiseToneHz { get; set; } = 2000;
+
     // App-level (not part of the DSP chain).
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
@@ -179,7 +206,29 @@ public sealed class Settings
             DeClickStrength = c.DeClicker.Strength,
             VoiceEnabled = c.VoiceChanger.Enabled,
             VoiceSemitones = c.VoiceChanger.Semitones,
-            VoiceMix = c.VoiceChanger.Mix
+            VoiceMix = c.VoiceChanger.Mix,
+            ExpanderEnabled = c.Expander.Enabled,
+            ExpanderThresholdDb = c.Expander.ThresholdDb,
+            ExpanderRatio = c.Expander.Ratio,
+            ExpanderReleaseMs = c.Expander.ReleaseMs,
+            ExpanderRangeDb = c.Expander.RangeDb,
+            DeReverbEnabled = c.DeReverb.Enabled,
+            DeReverbAmount = c.DeReverb.Amount,
+            DeReverbDecayMs = c.DeReverb.DecayMs,
+            MultibandEnabled = c.Multiband.Enabled,
+            MbCrossLow = c.Multiband.CrossLow,
+            MbCrossHigh = c.Multiband.CrossHigh,
+            MbThreshLowDb = c.Multiband.ThreshLowDb,
+            MbThreshMidDb = c.Multiband.ThreshMidDb,
+            MbThreshHighDb = c.Multiband.ThreshHighDb,
+            MbRatio = c.Multiband.Ratio,
+            MbMakeupDb = c.Multiband.MakeupDb,
+            ExciterEnabled = c.Exciter.Enabled,
+            ExciterFreq = c.Exciter.Frequency,
+            ExciterAmount = c.Exciter.Amount,
+            ComfortNoiseEnabled = c.ComfortNoise.Enabled,
+            ComfortNoiseLevelDb = c.ComfortNoise.LevelDb,
+            ComfortNoiseToneHz = c.ComfortNoise.ToneHz
         };
         foreach (var b in c.Eq.Bands)
             s.EqBands.Add(new EqBandSetting
@@ -249,6 +298,28 @@ public sealed class Settings
         c.VoiceChanger.Enabled = VoiceEnabled;
         c.VoiceChanger.Semitones = VoiceSemitones;
         c.VoiceChanger.Mix = VoiceMix;
+        c.Expander.Enabled = ExpanderEnabled;
+        c.Expander.ThresholdDb = ExpanderThresholdDb;
+        c.Expander.Ratio = ExpanderRatio;
+        c.Expander.ReleaseMs = ExpanderReleaseMs;
+        c.Expander.RangeDb = ExpanderRangeDb;
+        c.DeReverb.Enabled = DeReverbEnabled;
+        c.DeReverb.Amount = DeReverbAmount;
+        c.DeReverb.DecayMs = DeReverbDecayMs;
+        c.Multiband.Enabled = MultibandEnabled;
+        c.Multiband.CrossLow = MbCrossLow;
+        c.Multiband.CrossHigh = MbCrossHigh;
+        c.Multiband.ThreshLowDb = MbThreshLowDb;
+        c.Multiband.ThreshMidDb = MbThreshMidDb;
+        c.Multiband.ThreshHighDb = MbThreshHighDb;
+        c.Multiband.Ratio = MbRatio;
+        c.Multiband.MakeupDb = MbMakeupDb;
+        c.Exciter.Enabled = ExciterEnabled;
+        c.Exciter.Frequency = ExciterFreq;
+        c.Exciter.Amount = ExciterAmount;
+        c.ComfortNoise.Enabled = ComfortNoiseEnabled;
+        c.ComfortNoise.LevelDb = ComfortNoiseLevelDb;
+        c.ComfortNoise.ToneHz = ComfortNoiseToneHz;
 
         for (int i = 0; i < EqBands.Count && i < c.Eq.Bands.Count; i++)
         {
