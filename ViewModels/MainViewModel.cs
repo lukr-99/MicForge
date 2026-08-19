@@ -36,6 +36,7 @@ public sealed class MainViewModel : ViewModelBase
         ReloadCraftCommand = new RelayCommand(ReloadCraftCards);
         OpenCraftFileCommand = new RelayCommand(OpenCraftFile);
         AddPreviewSampleCommand = new RelayCommand(AddPreviewSample);
+        OpenPresetsFolderCommand = new RelayCommand(OpenPresetsFolder);
         ResetLoudnessCommand = new RelayCommand(() => _engine.Chain.Loudness.ResetMeasurement());
         UndoCommand = new RelayCommand(Undo, () => _undo.Count > 0);
         RedoCommand = new RelayCommand(Redo, () => _redo.Count > 0);
@@ -59,6 +60,7 @@ public sealed class MainViewModel : ViewModelBase
             _globalHotkeys = saved.GlobalHotkeysEnabled;
             _followDefaultInput = saved.FollowDefaultInput;
             _showMuteOverlay = saved.ShowMuteOverlay;
+            _lastPreset = saved.LastPreset;
             _pttEnabled = saved.PttEnabled;
             _pttHoldToTalk = saved.PttHoldToTalk;
             _pttVk = saved.PttVk;
@@ -68,6 +70,7 @@ public sealed class MainViewModel : ViewModelBase
         ApplyStageOrder(saved?.StageOrder);
         RestoreCrafting(saved);
         LoadPreviewSamples();
+        LoadPresets(_lastPreset);
         BuildHotkeys(saved);
         if (_pttEnabled) ApplyPttState();
         if (_followDefaultInput) ApplyFollowDefault();
@@ -102,6 +105,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ReloadCraftCommand { get; }
     public RelayCommand OpenCraftFileCommand { get; }
     public RelayCommand AddPreviewSampleCommand { get; }
+    public RelayCommand OpenPresetsFolderCommand { get; }
     public RelayCommand ResetLoudnessCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand RedoCommand { get; }
@@ -471,18 +475,63 @@ public sealed class MainViewModel : ViewModelBase
         BuildStages();
     }
 
-    public string[] PresetNames => BuiltInPresets.Names;
+    public ObservableCollection<PresetItem> Presets { get; } = new();
+    private bool _loadingPresets;
+    private string _lastPreset;
 
-    private string _selectedPresetName;
-    public string SelectedPresetName
+    private PresetItem _selectedPreset;
+    public PresetItem SelectedPreset
     {
-        get => _selectedPresetName;
+        get => _selectedPreset;
         set
         {
-            if (!Set(ref _selectedPresetName, value) || string.IsNullOrEmpty(value)) return;
-            BuiltInPresets.Apply(value, _engine.Chain);
-            BuildStages();
+            if (!Set(ref _selectedPreset, value) || value == null || _loadingPresets) return;
+            ApplyPreset(value);
         }
+    }
+
+    /// <summary>Rebuild the preset list (built-ins + the presets folder) and select by name
+    /// without re-applying — the chain state is already restored from settings.</summary>
+    private void LoadPresets(string selectName)
+    {
+        _loadingPresets = true;
+        Presets.Clear();
+        foreach (var p in PresetLibrary.List()) Presets.Add(p);
+        _selectedPreset = Presets.FirstOrDefault(p => p.Name == selectName);
+        OnPropertyChanged(nameof(SelectedPreset));
+        _loadingPresets = false;
+    }
+
+    private void ApplyPreset(PresetItem item)
+    {
+        if (item.IsBuiltIn)
+        {
+            BuiltInPresets.Apply(item.Name, _engine.Chain);
+            BuildStages();
+            RenumberAndApplyChain(save: false);
+        }
+        else
+        {
+            var s = Settings.Load(item.Path);
+            if (s == null) { MessageBox.Show("Could not read that preset.", "MicForge"); return; }
+            s.ApplyTo(_engine.Chain);
+            BuildStages();
+            ApplyStageOrder(s.StageOrder);
+            RestoreCrafting(s);
+        }
+        _lastPreset = item.Name;
+        SaveSettings();
+        _histLast = Snapshot().ToJson();
+    }
+
+    private void OpenPresetsFolder()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(PresetLibrary.Folder) { UseShellExecute = true });
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
     private bool _monitorEnabled;
@@ -579,7 +628,7 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.3.5 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.4.0 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
@@ -1397,6 +1446,7 @@ public sealed class MainViewModel : ViewModelBase
         s.PttVk = PttVk;
         s.Hotkeys = Hotkeys.Select(h => new HotkeyBinding { Action = h.ActionId, Modifiers = h.Modifiers, Vk = h.Vk }).ToList();
         s.CraftCards = CraftCards.Select(x => new CraftCardState { Id = x.Id, Enabled = x.Enabled, Intensity = x.Intensity }).ToList();
+        s.LastPreset = _lastPreset;
         return s;
     }
 
@@ -1442,16 +1492,29 @@ public sealed class MainViewModel : ViewModelBase
     private void SavePresetDialog()
     {
         var dlg = new Microsoft.Win32.SaveFileDialog
-        { Filter = "MicForge preset (*.json)|*.json", FileName = "preset.json" };
-        if (dlg.ShowDialog() == true)
         {
-            try { Snapshot().Save(dlg.FileName); } catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+            Filter = "MicForge preset (*.json)|*.json",
+            FileName = "My preset.json",
+            InitialDirectory = PresetLibrary.Folder   // default here so it shows up in the dropdown
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            Snapshot().Save(dlg.FileName);
+            var name = Path.GetFileNameWithoutExtension(dlg.FileName);
+            LoadPresets(name);
+            _selectedPreset = Presets.FirstOrDefault(p => p.Name == name);
+            OnPropertyChanged(nameof(SelectedPreset));
+            _lastPreset = name;
+            SaveSettings();
         }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
     private void LoadPresetDialog()
     {
-        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "MicForge preset (*.json)|*.json" };
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        { Filter = "MicForge preset (*.json)|*.json", InitialDirectory = PresetLibrary.Folder };
         if (dlg.ShowDialog() != true) return;
 
         var s = Settings.Load(dlg.FileName);
@@ -1462,6 +1525,21 @@ public sealed class MainViewModel : ViewModelBase
         BuildStages();
         ApplyStageOrder(s.StageOrder);
         RestoreCrafting(s);
+
+        // Copy it into the presets folder so it appears in the dropdown next time.
+        var name = Path.GetFileNameWithoutExtension(dlg.FileName);
+        try
+        {
+            if (!string.Equals(Path.GetDirectoryName(dlg.FileName), PresetLibrary.Folder, StringComparison.OrdinalIgnoreCase))
+                File.Copy(dlg.FileName, Path.Combine(PresetLibrary.Folder, Path.GetFileName(dlg.FileName)), overwrite: true);
+        }
+        catch { }
+
+        LoadPresets(name);
+        _selectedPreset = Presets.FirstOrDefault(p => p.Name == name);
+        OnPropertyChanged(nameof(SelectedPreset));
+        _lastPreset = name;
+        SaveSettings();
         _histLast = Snapshot().ToJson();
     }
 }

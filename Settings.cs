@@ -148,6 +148,7 @@ public sealed class Settings
     public uint PttVk { get; set; }
     public List<HotkeyBinding> Hotkeys { get; set; }
     public List<CraftCardState> CraftCards { get; set; }
+    public string LastPreset { get; set; }
 
     public static Settings CaptureFrom(DspChain c)
     {
