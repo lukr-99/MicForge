@@ -493,9 +493,18 @@
 
                 <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="Live preview — tone curve + spectrum" FontSize="11"
-                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,6">
+                            <TextBlock Text="Live preview — tone curve + spectrum" FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="▶ Play sample voice" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding PreviewSampleActive}"/>
+                            </StackPanel>
+                        </Grid>
                         <ctrl:EqGraph Height="180" Model="{Binding EqStage}" IsHitTestVisible="False"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,8,0,0"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Text="Plays a built-in voice through your effects so you can hear the crafted result without talking (uses your monitor device, or the default output). To use your own voice instead, press Start on the Processor tab with Monitoring on."/>
                     </StackPanel>
                 </Border>
 

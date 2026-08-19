@@ -1081,6 +1081,36 @@ public sealed class MainViewModel : ViewModelBase
             foreach (var p in s.Params) p.NotifyChanged();
     }
 
+    // ---- crafting preview (play a standard voice sample through the chain) ----
+    private PreviewPlayer _preview;
+    private bool _previewActive;
+    public bool PreviewSampleActive
+    {
+        get => _previewActive;
+        set
+        {
+            if (!Set(ref _previewActive, value)) return;
+            if (value) StartSamplePreview(); else _preview?.Stop();
+        }
+    }
+
+    private void StartSamplePreview()
+    {
+        if (_engine.Running || _engine.Reconnecting) _engine.Stop();
+        _preview ??= new PreviewPlayer(_engine.Chain, VoiceSample.Generate(AudioEngine.SampleRate));
+        try
+        {
+            _preview.Start(SelectedMonitorDevice?.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Sample preview failed to start", ex);
+            _previewActive = false;
+            OnPropertyChanged(nameof(PreviewSampleActive));
+            MessageBox.Show("Could not start the preview on your output device.", "MicForge");
+        }
+    }
+
     // ---- undo / redo (coalesced snapshots of the whole chain) ----
     private readonly Stack<string> _undo = new();
     private readonly Stack<string> _redo = new();
@@ -1186,6 +1216,8 @@ public sealed class MainViewModel : ViewModelBase
             MessageBox.Show("Select an input and an output device first.", "MicForge");
             return;
         }
+
+        PreviewSampleActive = false;   // sample preview and live mic share the one chain
 
         try
         {
@@ -1334,6 +1366,7 @@ public sealed class MainViewModel : ViewModelBase
         _meterTimer?.Stop();
         _histTimer?.Stop();
         _defaultWatcher?.Dispose();
+        _preview?.Dispose();
         SaveSettings();
         _engine.Dispose();
     }
