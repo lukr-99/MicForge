@@ -16,6 +16,7 @@ public sealed class CraftCardConfig
     public double Pitch { get; set; }
     public double[] Eq { get; set; } = new double[5];   // low shelf, low-mid, mid, presence, air
     public double Drive { get; set; }
+    public double Exciter { get; set; }                  // harmonic exciter amount (percent)
 }
 
 /// <summary>
@@ -42,7 +43,18 @@ public static class CraftCatalog
             if (File.Exists(FilePath))
             {
                 var list = JsonSerializer.Deserialize<List<CraftCardConfig>>(File.ReadAllText(FilePath));
-                if (list != null && list.Count > 0) return Normalize(list);
+                if (list != null && list.Count > 0)
+                {
+                    list = Normalize(list);
+                    // Merge in any newly-shipped default cards the user's file doesn't have yet.
+                    var have = new HashSet<string>();
+                    foreach (var c in list) have.Add(c.Id);
+                    bool added = false;
+                    foreach (var d in Defaults())
+                        if (!have.Contains(d.Id)) { list.Add(d); added = true; }
+                    if (added) Save(list);
+                    return list;
+                }
             }
         }
         catch { /* fall through to defaults */ }
@@ -86,8 +98,8 @@ public static class CraftCatalog
     }
 
     private static CraftCardConfig C(string id, string icon, string title, string blurb, string explanation,
-        double pitch, double[] eq, double drive) =>
-        new() { Id = id, Icon = icon, Title = title, Blurb = blurb, Explanation = explanation, Pitch = pitch, Eq = eq, Drive = drive };
+        double pitch, double[] eq, double drive, double exciter = 0) =>
+        new() { Id = id, Icon = icon, Title = title, Blurb = blurb, Explanation = explanation, Pitch = pitch, Eq = eq, Drive = drive, Exciter = exciter };
 
     public static List<CraftCardConfig> Defaults() => new()
     {
@@ -181,5 +193,23 @@ public static class CraftCatalog
         C("deepradio", "🎚️", "Deep Radio", "Smooth late-night DJ.",
             "A slight pitch drop with rich lows and controlled presence — the classic FM night-show voice.",
             -2, new[]{ 4.0, 1, 0, 1, -1 }, 2),
+        C("sparkle", "🌟", "Sparkle", "Shimmering high-end sheen.",
+            "Uses the harmonic exciter to add brand-new sparkle up top — brighter and livelier than a plain treble boost.",
+            0, new[]{ 0.0, 0, 0, 1, 2 }, 0, 40),
+        C("hd", "💎", "HD Voice", "Crisp, modern, hi-fi.",
+            "Presence and air plus a touch of exciter for a clean, detailed, high-definition sound.",
+            0, new[]{ 0.0, 0, 1, 2, 3 }, 0, 30),
+        C("silky", "🧵", "Silky", "Smooth but detailed.",
+            "A little low-end body with gentle exciter sheen — smooth yet articulate.",
+            0, new[]{ 1.0, 0, 0, 0, 1 }, 0, 20),
+        C("crystal", "🔮", "Crystal", "Ultra-clear and bright.",
+            "Strong presence, air and exciter for a glassy, crystal-clear voice. Ease off if it gets fizzy.",
+            0, new[]{ 0.0, 0, 2, 3, 3 }, 0, 35),
+        C("bcpro", "📡", "Broadcast Pro", "Polished on-air sound.",
+            "Full body, forward presence and a hint of exciter — a finished, broadcast-ready tone.",
+            0, new[]{ 3.0, 0, 1, 2, 1 }, 0, 20),
+        C("edgy", "🔪", "Edgy", "Aggressive and cutting.",
+            "Hard presence with saturation and exciter for a raw, in-your-face delivery.",
+            0, new[]{ 0.0, 0, 3, 3, 0 }, 4, 30),
     };
 }

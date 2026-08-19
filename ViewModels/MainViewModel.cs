@@ -976,7 +976,7 @@ public sealed class MainViewModel : ViewModelBase
     private void ApplyCrafting()
     {
         var c = _engine.Chain;
-        double pitch = 0, drive = 0;
+        double pitch = 0, drive = 0, exciter = 0;
         var eq = new double[5];
         bool any = false;
         foreach (var card in CraftCards)
@@ -986,6 +986,7 @@ public sealed class MainViewModel : ViewModelBase
             any = true;
             pitch += card.Pitch * s;
             drive += card.Drive * s;
+            exciter += card.Exciter * s;
             for (int i = 0; i < 5; i++) eq[i] += card.Eq[i] * s;
         }
 
@@ -1007,6 +1008,16 @@ public sealed class MainViewModel : ViewModelBase
         else if (any)
         {
             c.Saturation.Enabled = false;
+        }
+
+        if (exciter > 0.5)
+        {
+            c.Exciter.Amount = Math.Clamp(exciter, 0, 100);
+            c.Exciter.Enabled = true;
+        }
+        else if (any)
+        {
+            c.Exciter.Enabled = false;
         }
 
         RefreshParamDisplays();

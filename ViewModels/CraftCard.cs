@@ -25,6 +25,7 @@ public sealed class CraftCard : ViewModelBase
         Pitch = cfg.Pitch;
         Eq = cfg.Eq;
         Drive = cfg.Drive;
+        Exciter = cfg.Exciter;
     }
 
     public string Id { get; }
@@ -37,6 +38,7 @@ public sealed class CraftCard : ViewModelBase
     public double Pitch { get; }      // semitones
     public double[] Eq { get; }       // 5 band gain deltas (low shelf, low-mid, mid, presence, air)
     public double Drive { get; }      // saturation drive dB
+    public double Exciter { get; }    // harmonic exciter amount (percent)
 
     /// <summary>Human-readable list of exactly what this card changes at full intensity.</summary>
     public string TechnicalPeek
@@ -48,6 +50,7 @@ public sealed class CraftCard : ViewModelBase
             for (int i = 0; i < 5 && i < Eq.Length; i++)
                 if (Math.Abs(Eq[i]) >= 0.01) parts.Add($"{BandNames[i]} {Eq[i]:+0.#;-0.#} dB");
             if (Drive >= 0.5) parts.Add($"Saturation drive +{Drive:0.#} dB");
+            if (Exciter >= 0.5) parts.Add($"Exciter {Exciter:0}%");
             return parts.Count == 0 ? "No change." : string.Join("   ·   ", parts);
         }
     }
