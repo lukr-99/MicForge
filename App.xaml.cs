@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MicForge;
 
@@ -14,6 +15,7 @@ public partial class App : Application
     private const string ShowSignalName = "MicForge_ShowWindow_9a1f";
     private Mutex _instanceMutex;
     private EventWaitHandle _showSignal;
+    private ServiceProvider _services;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -38,6 +40,18 @@ public partial class App : Application
 
         Log.Info($"MicForge starting (v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}).");
         base.OnStartup(e);
+
+        // Compose the object graph and show the main window (constructor-injected).
+        _services = Composition.Build();
+        var window = _services.GetRequiredService<MainWindow>();
+        MainWindow = window;
+        window.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _services?.Dispose();
+        base.OnExit(e);
     }
 
     /// <summary>Background wait for a second launch asking us to show the window.</summary>

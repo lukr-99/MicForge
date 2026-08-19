@@ -12,15 +12,16 @@ namespace MicForge.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase
 {
-    private readonly AudioEngine _engine = new();
+    private readonly AudioEngine _engine;
     private readonly string _settingsPath = Settings.DefaultPath();
     private readonly DispatcherTimer _meterTimer;
 
     public event Action ExitRequested;
     public event Action ShowRequested;
 
-    public MainViewModel()
+    public MainViewModel(AudioEngine engine)
     {
+        _engine = engine;
         StartStopCommand = new RelayCommand(ToggleRun);
         RefreshCommand = new RelayCommand(() => { LoadDevices(); SelectDefaults(null); });
         SavePresetCommand = new RelayCommand(SavePresetDialog);

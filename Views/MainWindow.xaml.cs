@@ -21,10 +21,10 @@ public partial class MainWindow : Window
     private bool _exiting;
     private bool _shownBalloon;
 
-    public MainWindow()
+    public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
-        _vm = new MainViewModel();
+        _vm = vm;
         DataContext = _vm;
 
         _vm.ExitRequested += ExitApp;
