@@ -3,7 +3,7 @@
 ; adds a Start-menu shortcut, and registers an uninstaller in "Installed apps".
 
 #define MyAppName "MicForge"
-#define MyAppVersion "1.3.2"
+#define MyAppVersion "1.3.3"
 #define MyAppPublisher "lukr-99"
 #define MyAppExeName "MicForge.exe"
 #define MyAppURL "https://github.com/lukr-99/MicForge"
@@ -35,7 +35,7 @@ UninstallDisplayName={#MyAppName}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-VersionInfoVersion=1.3.2.0
+VersionInfoVersion=1.3.3.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
 LicenseFile=..\LICENSE.md

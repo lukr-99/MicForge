@@ -422,27 +422,27 @@
         </Setter>
     </Style>
 
-    <!-- Filter chip (RadioButton) for the Crafting category filter. -->
+    <!-- Filter chip (RadioButton) for the Crafting category filter.
+         Its accent colour comes from the chip's Tag (a "#RRGGBB" category colour). -->
     <Style x:Key="Chip" TargetType="RadioButton">
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+        <Setter Property="Foreground"
+                Value="{Binding Tag, RelativeSource={RelativeSource Self}, Converter={StaticResource HexToBrush}}"/>
         <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Margin" Value="0,0,8,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="b" Background="{StaticResource SurfaceAltBrush}" BorderBrush="{StaticResource BorderBrush}"
+                    <Border x:Name="b" Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HexToBrush}}"
                             BorderThickness="1" CornerRadius="13" Padding="12,5">
-                        <ContentPresenter VerticalAlignment="Center"/>
+                        <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-                            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{StaticResource AccentBrush}"/>
-                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Setter TargetName="b" Property="Background"
+                                    Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HexToBrush}}"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                     </ControlTemplate.Triggers>

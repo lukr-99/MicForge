@@ -511,15 +511,15 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                     <TextBlock Text="Filter" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
                                VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="All"
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="All" Tag="#2EC4B6"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=All}"/>
-                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="🎚 Tone"
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="🎚 Tone" Tag="#4FA3E3"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Tone}"/>
-                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="✨ Polish"
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="✨ Polish" Tag="#E3B23C"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Polish}"/>
-                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="😜 Fun"
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="😜 Fun" Tag="#E36CA0"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=Fun}"/>
-                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="📻 FX"
+                    <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="📻 FX" Tag="#7FB069"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=FX}"/>
                 </StackPanel>
 

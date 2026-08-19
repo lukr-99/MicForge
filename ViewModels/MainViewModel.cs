@@ -576,7 +576,7 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.3.2 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.3.3 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
