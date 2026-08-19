@@ -10,7 +10,7 @@ namespace MicForge.Audio;
 /// is measurement-only; it never colours the audio. Also reports integrated LUFS (gated),
 /// loudness range (LRA) and true-peak (dBTP) for the analyzer.
 /// </summary>
-public sealed class LoudnessProcessor : IAudioProcessor
+public sealed class LoudnessProcessor : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _stage1 = new();   // BS.1770 pre-filter (high shelf)
@@ -33,6 +33,7 @@ public sealed class LoudnessProcessor : IAudioProcessor
     public LoudnessProcessor(double sampleRate)
     {
         _sr = sampleRate;
+        Enabled = true;
         _blockLen = (int)(_sr * 0.4);
         _stLen = (int)(_sr * 0.1);
         // Fixed BS.1770 coefficients for 48 kHz (the engine's internal rate).
@@ -40,8 +41,7 @@ public sealed class LoudnessProcessor : IAudioProcessor
         _stage2.SetRaw(1.0, -2.0, 1.0, -1.99004745483398, 0.99007225036621);
     }
 
-    public string Name => "Loudness";
-    public bool Enabled { get; set; } = true;   // always measures; AutoLevel controls gain
+    public override string Name => "Loudness";
 
     public bool AutoLevel { get; set; }
     public double TargetLufs { get; set; } = -16;
@@ -53,9 +53,8 @@ public sealed class LoudnessProcessor : IAudioProcessor
     public double LoudnessRange { get; private set; }   // LU
     public double TruePeakDb { get; private set; } = -120;
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
 
         double aM = Math.Exp(-1.0 / (_sr * 0.4));   // 400 ms momentary
         double aS = Math.Exp(-1.0 / (_sr * 3.0));   // 3 s short-term
@@ -174,7 +173,7 @@ public sealed class LoudnessProcessor : IAudioProcessor
         IntegratedLufs = -70; LoudnessRange = 0; TruePeakDb = -120;
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _msMomentary = _msShort = 0;
         _gainDb = 0;

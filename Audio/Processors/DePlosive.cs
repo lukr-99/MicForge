@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// of low-frequency energy a plosive makes, and ducks only that band while it lasts —
 /// phase-correct and flat at rest (out = x + (g-1)*lowband).
 /// </summary>
-public sealed class DePlosive : IAudioProcessor
+public sealed class DePlosive : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _low = new();
@@ -16,8 +16,7 @@ public sealed class DePlosive : IAudioProcessor
 
     public DePlosive(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "De-Plosive";
-    public bool Enabled { get; set; }
+    public override string Name => "De-Plosive";
     public double Frequency { get; set; } = 150;   // isolate the pop energy below this
     public double ThresholdDb { get; set; } = -30; // low-band level a pop must exceed
     public double Strength { get; set; } = 70;     // percent — how hard to duck the pop
@@ -31,9 +30,8 @@ public sealed class DePlosive : IAudioProcessor
         _curFreq = Frequency;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curFreq != Frequency) Update();
 
         double atk = Math.Exp(-1.0 / (_sr * 0.002)); // 2 ms
@@ -64,5 +62,5 @@ public sealed class DePlosive : IAudioProcessor
         ReductionDb = -maxRed;
     }
 
-    public void Reset() { _low.Reset(); _env = -100; ReductionDb = 0; }
+    public override void Reset() { _low.Reset(); _env = -100; ReductionDb = 0; }
 }

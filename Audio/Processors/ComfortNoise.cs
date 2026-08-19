@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// or expander leaves behind, so listeners on a call don't think you dropped off. It fades
 /// in only when you're not speaking, so it never muddies your voice.
 /// </summary>
-public sealed class ComfortNoise : IAudioProcessor
+public sealed class ComfortNoise : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _tone = new();   // soften the hiss
@@ -18,8 +18,7 @@ public sealed class ComfortNoise : IAudioProcessor
 
     public ComfortNoise(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "Comfort Noise";
-    public bool Enabled { get; set; }
+    public override string Name => "Comfort Noise";
     public double LevelDb { get; set; } = -60;   // noise bed level
     public double ToneHz { get; set; } = 2000;   // low-pass on the noise
 
@@ -35,9 +34,8 @@ public sealed class ComfortNoise : IAudioProcessor
         return (_rng / 2147483648f) - 1f;   // -1..1
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curTone != ToneHz) Update();
 
         double amp = Math.Pow(10, LevelDb / 20.0);
@@ -61,5 +59,5 @@ public sealed class ComfortNoise : IAudioProcessor
         }
     }
 
-    public void Reset() { _tone.Reset(); _env = -100; _fill = 0; }
+    public override void Reset() { _tone.Reset(); _env = -100; _fill = 0; }
 }

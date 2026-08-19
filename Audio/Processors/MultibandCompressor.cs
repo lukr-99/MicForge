@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// crossover (perfect reconstruction: low+mid+high sums back to the input), compresses each
 /// band independently, and sums. Controls mud, boxiness and harshness separately.
 /// </summary>
-public sealed class MultibandCompressor : IAudioProcessor
+public sealed class MultibandCompressor : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _lp1 = new();   // below CrossLow
@@ -17,8 +17,7 @@ public sealed class MultibandCompressor : IAudioProcessor
 
     public MultibandCompressor(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "Multiband";
-    public bool Enabled { get; set; }
+    public override string Name => "Multiband";
     public double CrossLow { get; set; } = 250;
     public double CrossHigh { get; set; } = 3000;
     public double ThreshLowDb { get; set; } = -24;
@@ -37,9 +36,10 @@ public sealed class MultibandCompressor : IAudioProcessor
         _curLo = CrossLow; _curHi = CrossHigh;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void WhenDisabled() => GainReductionDb = 0;
+
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) { GainReductionDb = 0; return; }
         if (_curLo != CrossLow || _curHi != CrossHigh) Update();
 
         double atk = Math.Exp(-1.0 / (_sr * 0.008));
@@ -76,7 +76,7 @@ public sealed class MultibandCompressor : IAudioProcessor
         return Math.Pow(10, gainDb / 20.0);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _lp1.Reset(); _lp2.Reset();
         _eLow = _eMid = _eHigh = -100;

@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// taps, triangular-cross-faded to hide the wrap discontinuity). Shifts the whole voice up
 /// or down by a number of semitones — deep villain, chipmunk, or subtle disguise.
 /// </summary>
-public sealed class VoiceChanger : IAudioProcessor
+public sealed class VoiceChanger : AudioProcessorBase
 {
     private const int Window = 2048;              // grain length in samples
     private readonly int _bufLen = 1 << 13;       // 8192-sample delay line
@@ -19,14 +19,12 @@ public sealed class VoiceChanger : IAudioProcessor
 
     public VoiceChanger(double sampleRate) => _buf = new float[_bufLen];
 
-    public string Name => "Voice Changer";
-    public bool Enabled { get; set; }
+    public override string Name => "Voice Changer";
     public double Semitones { get; set; } = 0;    // -12 .. +12
     public double Mix { get; set; } = 100;         // percent wet
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
 
         // No shift requested → pass through clean (avoids granular coloration at unity).
         if (Math.Abs(Semitones) < 0.05) return;
@@ -71,5 +69,5 @@ public sealed class VoiceChanger : IAudioProcessor
         return (float)(_buf[i0] * (1 - frac) + _buf[i1] * frac);
     }
 
-    public void Reset() { Array.Clear(_buf, 0, _bufLen); _wpos = 0; _phase = 0; }
+    public override void Reset() { Array.Clear(_buf, 0, _bufLen); _wpos = 0; _phase = 0; }
 }

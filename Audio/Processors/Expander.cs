@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// quiet signal down progressively (by the ratio) once it falls below the threshold, so
 /// room tone and bleed fade naturally instead of chopping.
 /// </summary>
-public sealed class Expander : IAudioProcessor
+public sealed class Expander : AudioProcessorBase
 {
     private readonly double _sr;
     private double _envDb = -100;
@@ -15,8 +15,7 @@ public sealed class Expander : IAudioProcessor
 
     public Expander(double sampleRate) => _sr = sampleRate;
 
-    public string Name => "Expander";
-    public bool Enabled { get; set; }
+    public override string Name => "Expander";
     public double ThresholdDb { get; set; } = -45;
     public double Ratio { get; set; } = 2.5;       // >1: downward expansion
     public double ReleaseMs { get; set; } = 150;
@@ -25,9 +24,10 @@ public sealed class Expander : IAudioProcessor
     /// <summary>Current attenuation in dB, &lt;= 0 (for metering).</summary>
     public double ReductionDb { get; private set; }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void WhenDisabled() => ReductionDb = 0;
+
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) { ReductionDb = 0; return; }
 
         double atk = Math.Exp(-1.0 / (_sr * 0.005));  // 5 ms detector attack
         double rel = Math.Exp(-1.0 / (_sr * Math.Max(ReleaseMs, 0.01) / 1000.0));
@@ -52,5 +52,5 @@ public sealed class Expander : IAudioProcessor
         ReductionDb = minG;
     }
 
-    public void Reset() { _envDb = -100; _gainDb = 0; ReductionDb = 0; }
+    public override void Reset() { _envDb = -100; _gainDb = 0; ReductionDb = 0; }
 }

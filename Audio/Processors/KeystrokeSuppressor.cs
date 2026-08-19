@@ -8,7 +8,7 @@ namespace MicForge.Audio;
 /// short-term average (the signature of a click/clack) and briefly ducks the signal so the
 /// click is knocked down while your voice — which rises much more gradually — is left alone.
 /// </summary>
-public sealed class KeystrokeSuppressor : IAudioProcessor
+public sealed class KeystrokeSuppressor : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _hp = new();
@@ -17,8 +17,7 @@ public sealed class KeystrokeSuppressor : IAudioProcessor
 
     public KeystrokeSuppressor(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "Keystroke Suppressor";
-    public bool Enabled { get; set; }
+    public override string Name => "Keystroke Suppressor";
     public double DetectFreq { get; set; } = 2800;   // detector high-pass (Hz) — match your keyboard's click
     public double Sensitivity { get; set; } = 8;      // dB the spike must exceed the running average
     public double Strength { get; set; } = 70;        // percent — how hard a detected click is ducked
@@ -33,9 +32,10 @@ public sealed class KeystrokeSuppressor : IAudioProcessor
         _curFreq = DetectFreq;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void WhenDisabled() => ReductionDb = 0;
+
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) { ReductionDb = 0; return; }
         if (_curFreq != DetectFreq) Update();
 
         double fastC = Math.Exp(-1.0 / (_sr * 0.0004));   // 0.4 ms
@@ -68,5 +68,5 @@ public sealed class KeystrokeSuppressor : IAudioProcessor
         ReductionDb = 20 * Math.Log10(minG + 1e-9);
     }
 
-    public void Reset() { _hp.Reset(); _fast = _slow = 0; _duck = 1.0; _hold = 0; }
+    public override void Reset() { _hp.Reset(); _fast = _slow = 0; _duck = 1.0; _hold = 0; }
 }

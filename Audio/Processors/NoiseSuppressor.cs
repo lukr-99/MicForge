@@ -12,7 +12,7 @@ namespace MicForge.Audio;
 /// RNNoise works on 480-sample frames at 48 kHz mono, scaled to the int16 range. A small
 /// output FIFO primed with one frame of silence keeps the stream continuous (~10 ms).
 /// </summary>
-public sealed class NoiseSuppressor : IAudioProcessor
+public sealed class NoiseSuppressor : AudioProcessorBase
 {
     private const int Frame = 480;
     private const float Scale = 32768f;
@@ -40,9 +40,8 @@ public sealed class NoiseSuppressor : IAudioProcessor
         Prime();
     }
 
-    public string Name => "Noise Suppression (RNNoise)";
+    public override string Name => "Noise Suppression (RNNoise)";
     public bool Available { get; private set; }
-    public bool Enabled { get; set; }
     public string LoadedPath { get; private set; }
 
     /// <summary>Latest voice-activity probability (0..1) from RNNoise, for the smart gate.</summary>
@@ -94,7 +93,7 @@ public sealed class NoiseSuppressor : IAudioProcessor
         _read = 0; _write = Frame; _fifoCount = Frame; _fill = 0;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
         if (!Available || (!Enabled && !ProduceVad)) return;
         bool apply = Enabled;
@@ -124,7 +123,7 @@ public sealed class NoiseSuppressor : IAudioProcessor
         }
     }
 
-    public void Reset()
+    public override void Reset()
     {
         if (Available) Prime();
     }

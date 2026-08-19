@@ -8,24 +8,24 @@ namespace MicForge.Audio;
 /// well below the recent average — it pulls the level down, favouring the direct voice.
 /// Not a full acoustic dereverb, but it tightens up a boomy or echoey room.
 /// </summary>
-public sealed class DeReverb : IAudioProcessor
+public sealed class DeReverb : AudioProcessorBase
 {
     private readonly double _sr;
     private double _fast, _slow, _gain = 1.0;
 
     public DeReverb(double sampleRate) => _sr = sampleRate;
 
-    public string Name => "De-Reverb";
-    public bool Enabled { get; set; }
+    public override string Name => "De-Reverb";
     public double Amount { get; set; } = 50;     // percent — how hard to suppress the tail
     public double DecayMs { get; set; } = 150;    // room-tail time constant
 
     /// <summary>Current attenuation in dB, &lt;= 0 (for metering).</summary>
     public double ReductionDb { get; private set; }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void WhenDisabled() => ReductionDb = 0;
+
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) { ReductionDb = 0; return; }
 
         double fastC = Math.Exp(-1.0 / (_sr * 0.003));                         // 3 ms
         double slowC = Math.Exp(-1.0 / (_sr * Math.Max(DecayMs, 10) / 1000.0)); // tail
@@ -54,5 +54,5 @@ public sealed class DeReverb : IAudioProcessor
         ReductionDb = 20 * Math.Log10(minG + 1e-9);
     }
 
-    public void Reset() { _fast = _slow = 0; _gain = 1.0; ReductionDb = 0; }
+    public override void Reset() { _fast = _slow = 0; _gain = 1.0; ReductionDb = 0; }
 }

@@ -9,7 +9,7 @@ namespace MicForge.Audio;
 /// (It has no far-end reference, so it targets slap-back / room echo of your own voice,
 /// not full duplex acoustic echo cancellation.)
 /// </summary>
-public sealed class EchoRemover : IAudioProcessor
+public sealed class EchoRemover : AudioProcessorBase
 {
     private const int Taps = 512;                 // ~10 ms modelling window around the delay
     private readonly double _sr;
@@ -20,8 +20,7 @@ public sealed class EchoRemover : IAudioProcessor
 
     public EchoRemover(double sampleRate) { _sr = sampleRate; Ensure(); }
 
-    public string Name => "Echo Remover";
-    public bool Enabled { get; set; }
+    public override string Name => "Echo Remover";
     public double DelayMs { get; set; } = 120;    // approximate echo time
     public double Strength { get; set; } = 60;     // percent
 
@@ -40,9 +39,8 @@ public sealed class EchoRemover : IAudioProcessor
         _curDelay = DelayMs;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curDelay != DelayMs) Ensure();
 
         double strength = Math.Clamp(Strength / 100.0, 0, 1);
@@ -78,7 +76,7 @@ public sealed class EchoRemover : IAudioProcessor
         }
     }
 
-    public void Reset()
+    public override void Reset()
     {
         if (_hist != null) Array.Clear(_hist, 0, _hlen);
         Array.Clear(_w, 0, Taps);

@@ -6,7 +6,7 @@ namespace MicForge.Audio;
 /// Removes mains hum and its harmonics with a stack of narrow notch filters at the base
 /// frequency (50 Hz in most of the world, 60 Hz in North America) and its multiples.
 /// </summary>
-public sealed class HumRemover : IAudioProcessor
+public sealed class HumRemover : AudioProcessorBase
 {
     private readonly double _sr;
     private Biquad[] _notches = Array.Empty<Biquad>();
@@ -16,8 +16,7 @@ public sealed class HumRemover : IAudioProcessor
 
     public HumRemover(double sampleRate) => _sr = sampleRate;
 
-    public string Name => "Hum Remover";
-    public bool Enabled { get; set; }
+    public override string Name => "Hum Remover";
     public double Frequency { get; set; } = 50;   // 50 (EU/most) or 60 (US) Hz
     public int Harmonics { get; set; } = 4;        // notch this many multiples of the base
     public double Q { get; set; } = 30;            // higher = narrower notch (less tone loss)
@@ -38,9 +37,8 @@ public sealed class HumRemover : IAudioProcessor
         _curFreq = Frequency; _curHarm = n; _curQ = Q;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_notches.Length == 0 || _curFreq != Frequency || _curHarm != ClampedHarm || _curQ != Q)
             Rebuild();
 
@@ -53,5 +51,5 @@ public sealed class HumRemover : IAudioProcessor
         }
     }
 
-    public void Reset() { foreach (var b in _notches) b.Reset(); }
+    public override void Reset() { foreach (var b in _notches) b.Reset(); }
 }

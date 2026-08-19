@@ -6,22 +6,22 @@ namespace MicForge.Audio;
 /// Split-band de-esser: detects sibilant energy in a band and attenuates only the high
 /// band. Phase-correct and flat at rest (out = x + (g-1)*highband).
 /// </summary>
-public sealed class DeEsser : IAudioProcessor
+public sealed class DeEsser : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _highSplit = new();
     private readonly Biquad _detBand = new();
-    private double _envDb = -100;
+    private readonly EnvelopeFollower _envDb = new(-100);
     private double _curFreq;
 
     public DeEsser(double sampleRate)
     {
         _sr = sampleRate;
+        Enabled = true;
         Update();
     }
 
-    public string Name => "De-Esser";
-    public bool Enabled { get; set; } = true;
+    public override string Name => "De-Esser";
     public double Frequency { get; set; } = 6500;
     public double ThresholdDb { get; set; } = -28;
     public double Ratio { get; set; } = 4;
@@ -38,13 +38,12 @@ public sealed class DeEsser : IAudioProcessor
         _curFreq = Frequency;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curFreq != Frequency) Update();
 
-        double atk = Math.Exp(-1.0 / (_sr * 0.001)); // 1 ms
-        double rel = Math.Exp(-1.0 / (_sr * 0.050)); // 50 ms
+        double atk = DspMath.Coef(0.001, _sr); // 1 ms
+        double rel = DspMath.Coef(0.050, _sr); // 50 ms
 
         for (int i = offset; i < offset + count; i++)
         {
@@ -52,20 +51,16 @@ public sealed class DeEsser : IAudioProcessor
             float high = _highSplit.Process(x);
             float det = _detBand.Process(x);
 
-            double lvl = 20 * Math.Log10(Math.Abs(det) + 1e-9);
-            double coef = lvl > _envDb ? atk : rel;
-            _envDb = lvl + (_envDb - lvl) * coef;
-
-            double over = _envDb - ThresholdDb;
+            double env = _envDb.Process(DspMath.ToDb(det), atk, rel);
+            double over = env - ThresholdDb;
             double grDb = over > 0 ? -(over - over / Ratio) : 0;
-            double g = Math.Pow(10, grDb / 20.0);
 
-            buffer[i] = (float)(x + (g - 1.0) * high);
+            buffer[i] = (float)(x + (DspMath.ToLinear(grDb) - 1.0) * high);
             ReductionDb = grDb;
         }
 
-        DetectorDb = _envDb;
+        DetectorDb = _envDb.Value;
     }
 
-    public void Reset() { _highSplit.Reset(); _detBand.Reset(); _envDb = -100; }
+    public override void Reset() { _highSplit.Reset(); _detBand.Reset(); _envDb.Reset(-100); }
 }

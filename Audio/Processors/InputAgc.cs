@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// or volume change. Gated on silence so it doesn't pump up noise. Runs early in the chain;
 /// complements the output loudness auto-leveler.
 /// </summary>
-public sealed class InputAgc : IAudioProcessor
+public sealed class InputAgc : AudioProcessorBase
 {
     private readonly double _sr;
     private double _level;    // envelope follower (linear)
@@ -15,14 +15,12 @@ public sealed class InputAgc : IAudioProcessor
 
     public InputAgc(double sampleRate) => _sr = sampleRate;
 
-    public string Name => "Auto Gain";
-    public bool Enabled { get; set; }
+    public override string Name => "Auto Gain";
     public double TargetDb { get; set; } = -18;
     public double MaxGainDb { get; set; } = 12;
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
 
         double rel = Math.Exp(-1.0 / (_sr * 0.100));   // 100 ms envelope release
         double glide = Math.Exp(-1.0 / (_sr * 1.5));    // 1.5 s gain glide
@@ -45,5 +43,5 @@ public sealed class InputAgc : IAudioProcessor
         }
     }
 
-    public void Reset() { _level = 0; _gainDb = 0; }
+    public override void Reset() { _level = 0; _gainDb = 0; }
 }

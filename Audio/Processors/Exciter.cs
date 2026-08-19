@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// asymmetric rectifier, and blends them back in — adds "sparkle"/air and presence without
 /// just boosting existing highs. Subtle amounts sound expensive; too much sounds fizzy.
 /// </summary>
-public sealed class Exciter : IAudioProcessor
+public sealed class Exciter : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _pre = new();    // isolate the high band
@@ -16,8 +16,7 @@ public sealed class Exciter : IAudioProcessor
 
     public Exciter(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "Exciter";
-    public bool Enabled { get; set; }
+    public override string Name => "Exciter";
     public double Frequency { get; set; } = 3000;  // harmonics generated above here
     public double Amount { get; set; } = 25;         // percent
 
@@ -28,9 +27,8 @@ public sealed class Exciter : IAudioProcessor
         _curFreq = Frequency;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curFreq != Frequency) Update();
         double amt = Math.Clamp(Amount / 100.0, 0, 1);
 
@@ -45,5 +43,5 @@ public sealed class Exciter : IAudioProcessor
         }
     }
 
-    public void Reset() { _pre.Reset(); _post.Reset(); }
+    public override void Reset() { _pre.Reset(); _post.Reset(); }
 }

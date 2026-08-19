@@ -7,7 +7,7 @@ namespace MicForge.Audio;
 /// spike that jumps well above its own short-term average (the signature of a click) and
 /// briefly ducks the high band when it fires. Flat at rest (out = x + (g-1)*highband).
 /// </summary>
-public sealed class DeClicker : IAudioProcessor
+public sealed class DeClicker : AudioProcessorBase
 {
     private readonly double _sr;
     private readonly Biquad _detect = new();   // detector band
@@ -17,8 +17,7 @@ public sealed class DeClicker : IAudioProcessor
 
     public DeClicker(double sampleRate) { _sr = sampleRate; Update(); }
 
-    public string Name => "De-Click";
-    public bool Enabled { get; set; }
+    public override string Name => "De-Click";
     public double Frequency { get; set; } = 3000;  // clicks/smacks live around here
     public double Sensitivity { get; set; } = 6;    // dB the fast peak must exceed the average
     public double Strength { get; set; } = 70;      // percent — how hard to duck a detected click
@@ -30,9 +29,8 @@ public sealed class DeClicker : IAudioProcessor
         _curFreq = Frequency;
     }
 
-    public void Process(float[] buffer, int offset, int count)
+    protected override void ProcessBlock(float[] buffer, int offset, int count)
     {
-        if (!Enabled) return;
         if (_curFreq != Frequency) Update();
 
         double fastC = Math.Exp(-1.0 / (_sr * 0.0005)); // 0.5 ms
@@ -57,5 +55,5 @@ public sealed class DeClicker : IAudioProcessor
         }
     }
 
-    public void Reset() { _detect.Reset(); _high.Reset(); _fast = _slow = 0; _reduce = 1.0; }
+    public override void Reset() { _detect.Reset(); _high.Reset(); _fast = _slow = 0; _reduce = 1.0; }
 }
