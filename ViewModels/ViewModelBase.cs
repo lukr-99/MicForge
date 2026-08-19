@@ -1,20 +1,16 @@
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MicForge.ViewModels;
 
-public abstract class ViewModelBase : INotifyPropertyChanged
+/// <summary>
+/// Base view-model. Derives CommunityToolkit.Mvvm's <see cref="ObservableObject"/> for change
+/// notification and to enable the <c>[ObservableProperty]</c> / <c>[RelayCommand]</c> source
+/// generators in derived VMs. <see cref="Set"/> is a thin alias over <c>SetProperty</c> kept
+/// for existing call sites.
+/// </summary>
+public abstract class ViewModelBase : ObservableObject
 {
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected void OnPropertyChanged([CallerMemberName] string name = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
     protected bool Set<T>(ref T field, T value, [CallerMemberName] string name = null)
-    {
-        if (Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(name);
-        return true;
-    }
+        => SetProperty(ref field, value, name);
 }

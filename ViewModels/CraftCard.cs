@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MicForge.ViewModels;
 
 /// <summary>
 /// One "voice character" card in the Crafting tab. Each card is a macro: a set of deltas
-/// (pitch, five EQ band gains, saturation drive) applied at its Intensity. Enabled cards
-/// are summed onto the EQ + Voice Changer + Saturation stages for an instant, layerable
-/// voice — no technical knobs required. Definitions come from craftcards.json.
+/// (pitch, five EQ band gains, saturation drive, exciter, low/high cut) applied at its
+/// Intensity. Enabled cards are summed onto the chain for an instant, layerable voice — no
+/// technical knobs required. Definitions come from craftcards.json.
 /// </summary>
-public sealed class CraftCard : ViewModelBase
+public sealed partial class CraftCard : ViewModelBase
 {
     private static readonly string[] BandNames = { "Low shelf", "Low-mid", "Mid", "Presence", "Air" };
     private readonly Action _onChange;
@@ -38,16 +39,6 @@ public sealed class CraftCard : ViewModelBase
     public string Blurb { get; }
     public string Explanation { get; }
 
-    /// <summary>Accent colour for this card's category (for a quick visual cue).</summary>
-    public string CategoryColor => Category switch
-    {
-        "Tone" => "#4FA3E3",    // blue
-        "Polish" => "#E3B23C",  // amber
-        "Fun" => "#E36CA0",     // pink
-        "FX" => "#7FB069",      // green
-        _ => "#6C7A89",         // grey
-    };
-
     // Deltas at 100% intensity.
     public double Pitch { get; }      // semitones
     public double[] Eq { get; }       // 5 band gain deltas (low shelf, low-mid, mid, presence, air)
@@ -73,29 +64,22 @@ public sealed class CraftCard : ViewModelBase
         }
     }
 
-    private bool _enabled;
-    public bool Enabled
-    {
-        get => _enabled;
-        set { if (Set(ref _enabled, value)) _onChange?.Invoke(); }
-    }
+    [ObservableProperty] private bool _enabled;
+    [ObservableProperty] private double _intensity = 100;
+    private bool _silent;
 
-    private double _intensity = 100;
-    public double Intensity
-    {
-        get => _intensity;
-        set { if (Set(ref _intensity, value) && _enabled) _onChange?.Invoke(); }
-    }
+    partial void OnEnabledChanged(bool value) { if (!_silent) _onChange?.Invoke(); }
+    partial void OnIntensityChanged(double value) { if (!_silent && Enabled) _onChange?.Invoke(); }
 
     /// <summary>0 when off, else Intensity as a 0..1 scale.</summary>
-    public double Scale => _enabled ? Math.Clamp(_intensity / 100.0, 0, 1) : 0;
+    public double Scale => Enabled ? Math.Clamp(Intensity / 100.0, 0, 1) : 0;
 
     /// <summary>Set enabled + intensity without triggering a recompute (used when restoring).</summary>
     public void SetSilently(bool enabled, double intensity)
     {
-        _enabled = enabled;
-        _intensity = intensity;
-        OnPropertyChanged(nameof(Enabled));
-        OnPropertyChanged(nameof(Intensity));
+        _silent = true;
+        Enabled = enabled;
+        Intensity = intensity;
+        _silent = false;
     }
 }
