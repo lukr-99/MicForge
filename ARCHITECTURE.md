@@ -9,6 +9,8 @@ app (Discord/OBS/games) hears the processed voice.
   tray `NotifyIcon`. Single third-party dependency: **NAudio 2.2.1** (WASAPI capture/render).
   All DSP is hand-written — no VST/plugin host.
 - **Internal audio format:** mono, 32-bit float, 48 kHz.
+- **Libraries:** NAudio (audio I/O), **CommunityToolkit.Mvvm** (view-model source generators),
+  **Microsoft.Extensions.DependencyInjection** (composition root).
 
 ## Project layout
 
@@ -20,11 +22,14 @@ directives — the sub-folders are organizational, the namespaces are stable.
 Audio/                     namespace MicForge.Audio
   Core/                    the engine-agnostic DSP primitives
     IAudioProcessor.cs       the stage contract (Strategy interface)
+    AudioProcessorBase.cs    base stage: Enabled gate + Process/ProcessBlock template
+    DspMath.cs               shared dB / time-constant helpers (ToLinear/ToDb/Coef)
+    EnvelopeFollower.cs      reusable one-pole attack/release follower
     Biquad.cs                RBJ biquad filter (+ FilterType enum)
     Fft.cs                   radix-2 FFT for the analyzers
     DspChain.cs              the ordered, reorderable pipeline + metering taps
     DspSampleProvider.cs     ISampleProvider that pulls the source and runs the chain
-  Processors/             one IAudioProcessor per file (the "stages")
+  Processors/             one AudioProcessorBase stage per file
     GainStage, HighPassStage, HumRemover, DePlosive, NoiseSuppressor, NoiseGate,
     Expander, DeClicker, KeystrokeSuppressor, DeReverb, EchoRemover, ParametricEq,
     Compressor, MultibandCompressor, DeEsser, Saturation, Exciter, VoiceChanger,
@@ -36,7 +41,7 @@ Audio/                     namespace MicForge.Audio
     TeeSampleProvider.cs     taps the processed signal for headphone monitoring
     PreviewPlayer.cs         plays a sample voice through the chain (Crafting preview)
   Presets/
-    BuiltInPresets.cs        full-chain voice presets (Broadcast, Podcast, Gaming, …)
+    BuiltInPresets.cs        loads bundled presets/*.json (full chain snapshots) — data, not code
     EqPresets.cs             quick EQ-curve presets (Bass Boost, Vocal, Loudness, …)
     VoiceSample.cs           preview-voice library + synthesised fallback
     PreviewSample.cs         one selectable preview voice (POCO)
@@ -54,7 +59,8 @@ ViewModels/                namespace MicForge.ViewModels
 
 Converters/                namespace MicForge.Converters   (one IValueConverter per file)
 Models/                    namespace MicForge              serializable data (Settings, PresetItem, …)
-Services/                  namespace MicForge              Log, StartupManager, GlobalHotkeys,
+Services/                  namespace MicForge              Composition (DI root), Log,
+                                                           StartupManager, GlobalHotkeys,
                                                            KeyboardHook, IconFactory, PresetLibrary
 Views/                     namespace MicForge              MainWindow (XAML), OsdWindow (mute overlay)
 Themes/Dark.xaml           the dark theme + styles + converter resources
@@ -79,12 +85,14 @@ writes are single primitive assignments, so no locking is needed between the two
 
 ## Design patterns
 
-- **Strategy / pipeline** — every stage implements `IAudioProcessor`; `DspChain` holds an
-  ordered `IAudioProcessor[]` and can be reordered at runtime (drag-and-drop). Adding an
-  effect never touches the chain's loop.
-- **MVVM** — Views bind to ViewModels; `ViewModelBase` implements `INotifyPropertyChanged`
-  (Observer). No code-behind logic beyond window/tray plumbing.
-- **Command** — `RelayCommand` (`ICommand`) wires buttons/hotkeys to VM methods.
+- **Dependency injection** — `Services/Composition.cs` is the single composition root
+  (`AudioEngine → MainViewModel → MainWindow`); `App` builds the provider and resolves the
+  window. No `new` for the main graph.
+- **Strategy / pipeline** — every stage derives `AudioProcessorBase` (`: IAudioProcessor`);
+  `DspChain` holds an ordered `IAudioProcessor[]` and can be reordered at runtime. Adding an
+  effect never touches the chain's loop. Shared DSP math lives in `DspMath` / `EnvelopeFollower`.
+- **MVVM (CommunityToolkit)** — `ViewModelBase : ObservableObject`; VMs use `[ObservableProperty]`
+  and `[RelayCommand]` source generators (Observer + Command patterns, generated).
 - **Template method** — `StageViewModel` is the base card; `EqStageViewModel` /
   `CompressorStageViewModel` specialise it with graph data.
 - **Catalog / library** — `CraftCatalog`, `PresetLibrary`, `VoiceSample`, `BuiltInPresets`,
@@ -107,8 +115,9 @@ All user state lives under `%AppData%\MicForge\` so it survives uninstall/reinst
 
 ## Adding a new DSP stage
 
-1. Add `Audio/Processors/MyStage.cs` implementing `IAudioProcessor` (`Name`, `Enabled`,
-   `Process`, `Reset`).
+1. Add `Audio/Processors/MyStage.cs` deriving `AudioProcessorBase` (override `Name` +
+   `ProcessBlock`; set `Enabled` default in the ctor; use `DspMath`/`EnvelopeFollower` for the
+   dB/time-constant/envelope math).
 2. In `Audio/Core/DspChain.cs`: add a property, construct it, and place it in the `_chain`
    array at its default position.
 3. In `Models/Settings.cs`: add persisted fields and wire them in `CaptureFrom` / `ApplyTo`.
