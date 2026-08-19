@@ -31,4 +31,20 @@ public sealed class EqStageViewModel : StageViewModel
     {
         foreach (var p in Params) p.NotifyChanged();
     }
+
+    // ---- quick EQ-curve presets ----
+    public string[] EqPresetNames => EqPresets.Names;
+
+    private string _selectedEqPreset;
+    public string SelectedEqPreset
+    {
+        get => _selectedEqPreset;
+        set
+        {
+            if (!Set(ref _selectedEqPreset, value) || string.IsNullOrEmpty(value)) return;
+            EqPresets.Apply(value, Eq);
+            NotifyParamsChanged();
+            OnPropertyChanged(nameof(Enabled));
+        }
+    }
 }

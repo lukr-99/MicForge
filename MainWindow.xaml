@@ -93,6 +93,16 @@
                                    FontSize="12" TextWrapping="Wrap" MaxWidth="200"/>
                     </StackPanel>
 
+                    <!-- Quick EQ-curve presets (EQ card only) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
+                                Visibility="{Binding IsEq, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="Preset" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                        <ComboBox Width="150" ItemsSource="{Binding EqPresetNames}"
+                                  SelectedItem="{Binding SelectedEqPreset}"
+                                  ToolTip="Apply an equalizer curve"/>
+                    </StackPanel>
+
                     <!-- EQ graph + spectrum (Graph view) -->
                     <ctrl:EqGraph Height="210" Margin="0,10,0,0" Model="{Binding}">
                         <ctrl:EqGraph.Visibility>
