@@ -507,6 +507,9 @@ public sealed class MainViewModel : ViewModelBase
         if (item.IsBuiltIn)
         {
             BuiltInPresets.Apply(item.Name, _engine.Chain);
+            // A built-in preset owns the sound now — clear active crafting cards so the tab
+            // reflects that (without re-applying, which would wipe the preset's EQ).
+            foreach (var card in CraftCards) card.SetSilently(false, card.Intensity);
             BuildStages();
             RenumberAndApplyChain(save: false);
         }
@@ -628,7 +631,7 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.4.0 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => "MicForge · v1.5.0 · PolyForm Noncommercial 1.0.0";
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
@@ -1049,13 +1052,21 @@ public sealed class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    /// <summary>Sum the enabled cards onto the EQ + Voice Changer + Saturation stages, live.</summary>
+    /// <summary>
+    /// Sum the enabled cards onto the High-Pass + EQ + Voice Changer + Saturation + Exciter
+    /// stages, live. EQ bands sit at fixed frequencies; LowCut drives the high-pass and
+    /// HighCut turns the top EQ band into a low-pass, giving real band-limiting (telephone,
+    /// megaphone, underwater…).
+    /// </summary>
     private void ApplyCrafting()
     {
         var c = _engine.Chain;
         double pitch = 0, drive = 0, exciter = 0;
         var eq = new double[5];
+        double lowCut = 80;      // Hz, the highest requested cut wins
+        double highCut = 0;      // Hz, the lowest requested cut wins; 0 = off
         bool any = false;
+
         foreach (var card in CraftCards)
         {
             double s = card.Scale;
@@ -1065,40 +1076,52 @@ public sealed class MainViewModel : ViewModelBase
             drive += card.Drive * s;
             exciter += card.Exciter * s;
             for (int i = 0; i < 5; i++) eq[i] += card.Eq[i] * s;
+
+            double lc = 80 + (Math.Max(card.LowCut, 80) - 80) * s;
+            if (lc > lowCut) lowCut = lc;
+
+            if (card.HighCut > 20)
+            {
+                double hc = 20000 - (20000 - card.HighCut) * s;
+                if (highCut <= 0 || hc < highCut) highCut = hc;
+            }
         }
 
-        for (int i = 0; i < 5 && i < c.Eq.Bands.Count; i++)
-            c.Eq.Bands[i].GainDb = Math.Clamp(eq[i], -18, 18);
+        // Fixed-frequency crafting EQ; the top band becomes a low-pass when a card muffles.
+        SetBand(c.Eq, 0, Biquad.FilterType.LowShelf, 120, 0.707, eq[0]);
+        SetBand(c.Eq, 1, Biquad.FilterType.Peaking, 500, 1.0, eq[1]);
+        SetBand(c.Eq, 2, Biquad.FilterType.Peaking, 1700, 1.4, eq[2]);
+        SetBand(c.Eq, 3, Biquad.FilterType.Peaking, 4000, 1.0, eq[3]);
+        if (highCut > 20 && highCut < 19000)
+            SetBand(c.Eq, 4, Biquad.FilterType.LowPass, highCut, 0.707, 0);
+        else
+            SetBand(c.Eq, 4, Biquad.FilterType.HighShelf, 10000, 0.707, eq[4]);
         c.Eq.UpdateAll();
         if (any) c.Eq.Enabled = true;
+
+        // Low cut via the high-pass stage.
+        c.HighPass.Frequency = Math.Clamp(lowCut, 20, 700);
+        if (any) c.HighPass.Enabled = true;
 
         double semi = Math.Clamp(pitch, -12, 12);
         c.VoiceChanger.Semitones = semi;
         c.VoiceChanger.Enabled = Math.Abs(semi) >= 0.05;
 
-        if (drive > 0.5)
-        {
-            c.Saturation.DriveDb = Math.Clamp(drive, 0, 24);
-            c.Saturation.Mix = 60;
-            c.Saturation.Enabled = true;
-        }
-        else if (any)
-        {
-            c.Saturation.Enabled = false;
-        }
+        c.Saturation.Enabled = drive > 0.5;
+        if (c.Saturation.Enabled) { c.Saturation.DriveDb = Math.Clamp(drive, 0, 24); c.Saturation.Mix = 60; }
 
-        if (exciter > 0.5)
-        {
-            c.Exciter.Amount = Math.Clamp(exciter, 0, 100);
-            c.Exciter.Enabled = true;
-        }
-        else if (any)
-        {
-            c.Exciter.Enabled = false;
-        }
+        c.Exciter.Enabled = exciter > 0.5;
+        if (c.Exciter.Enabled) c.Exciter.Amount = Math.Clamp(exciter, 0, 100);
 
         RefreshParamDisplays();
         SaveSettings();
+    }
+
+    private static void SetBand(ParametricEq eq, int i, Biquad.FilterType type, double freq, double q, double gain)
+    {
+        if (i >= eq.Bands.Count) return;
+        var b = eq.Bands[i];
+        b.Type = type; b.Freq = freq; b.Q = q; b.GainDb = Math.Clamp(gain, -18, 18); b.Enabled = true;
     }
 
     private void ResetCrafting()

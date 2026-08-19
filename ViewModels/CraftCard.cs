@@ -27,6 +27,8 @@ public sealed class CraftCard : ViewModelBase
         Eq = cfg.Eq;
         Drive = cfg.Drive;
         Exciter = cfg.Exciter;
+        LowCut = cfg.LowCut;
+        HighCut = cfg.HighCut;
     }
 
     public string Id { get; }
@@ -51,6 +53,8 @@ public sealed class CraftCard : ViewModelBase
     public double[] Eq { get; }       // 5 band gain deltas (low shelf, low-mid, mid, presence, air)
     public double Drive { get; }      // saturation drive dB
     public double Exciter { get; }    // harmonic exciter amount (percent)
+    public double LowCut { get; }     // high-pass cutoff Hz (thins), 0 = none
+    public double HighCut { get; }    // low-pass cutoff Hz (muffles), 0 = none
 
     /// <summary>Human-readable list of exactly what this card changes at full intensity.</summary>
     public string TechnicalPeek
@@ -63,6 +67,8 @@ public sealed class CraftCard : ViewModelBase
                 if (Math.Abs(Eq[i]) >= 0.01) parts.Add($"{BandNames[i]} {Eq[i]:+0.#;-0.#} dB");
             if (Drive >= 0.5) parts.Add($"Saturation drive +{Drive:0.#} dB");
             if (Exciter >= 0.5) parts.Add($"Exciter {Exciter:0}%");
+            if (LowCut >= 20) parts.Add($"Low cut {LowCut:0} Hz");
+            if (HighCut >= 20) parts.Add($"High cut {HighCut:0} Hz");
             return parts.Count == 0 ? "No change." : string.Join("   ·   ", parts);
         }
     }
