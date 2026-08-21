@@ -18,6 +18,7 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
     private readonly OsdWindow _osd;
+    private DeckBridge _bridge;
     private bool _exiting;
     private bool _shownBalloon;
 
@@ -79,6 +80,10 @@ public partial class MainWindow : Window
         catch { }
 
         UpdatePttHook();
+
+        // Loopback control endpoint for the Relay deck companion (best-effort; never fatal).
+        try { _bridge = new DeckBridge(_vm); _bridge.Start(); }
+        catch (Exception ex) { Log.Error("Deck bridge failed to start", ex); }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -104,6 +109,7 @@ public partial class MainWindow : Window
             HideToTray(showBalloon: true);
             return;
         }
+        _bridge?.Dispose();
         _vm.Shutdown();
         _tray?.Dispose();
     }
@@ -117,6 +123,7 @@ public partial class MainWindow : Window
     private void ExitApp()
     {
         _exiting = true;
+        _bridge?.Dispose();
         _hotkeys?.Dispose();
         _kbHook?.Dispose();
         _osd?.Close();
