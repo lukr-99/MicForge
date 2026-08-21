@@ -40,6 +40,9 @@ public sealed class DeckBridge : IDisposable
     private readonly CancellationTokenSource _cts = new();
     private readonly object _clientsLock = new();
     private readonly List<StreamWriter> _clients = new();
+    private readonly HashSet<StreamWriter> _meterClients = new();
+    private readonly List<StageViewModel> _watchedStages = new();
+    private DispatcherTimer _meterTimer;
     private volatile bool _started;
 
     public DeckBridge(MainViewModel vm)
@@ -53,6 +56,12 @@ public sealed class DeckBridge : IDisposable
         if (_started) return;
         _started = true;
         _vm.PropertyChanged += OnVmPropertyChanged;
+        WatchStages();
+        _vm.Stages.CollectionChanged += (_, _) => WatchStages();
+        // Throttled input-level push (~10 Hz) while any client has subscribed via {"op":"meter"}.
+        _meterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal,
+            (_, _) => MeterTick(), _dispatcher);
+        _meterTimer.Start();
         var t = new Thread(AcceptLoop) { IsBackground = true, Name = "MicForge-DeckBridge" };
         t.Start();
         Log.Info(@"Deck bridge listening on \\.\pipe\" + PipeName + ".");
@@ -110,7 +119,7 @@ public sealed class DeckBridge : IDisposable
         catch (Exception ex) { Log.Error("Deck bridge client error", ex); }
         finally
         {
-            if (writer != null) lock (_clientsLock) _clients.Remove(writer);
+            if (writer != null) lock (_clientsLock) { _clients.Remove(writer); _meterClients.Remove(writer); }
             try { pipe.Dispose(); } catch { }
         }
     }
@@ -148,6 +157,15 @@ public sealed class DeckBridge : IDisposable
                         else
                             SelectPreset(GetStr(root, "name"));
                         break;
+                    case "stage":
+                        ApplyStage(GetStr(root, "id"),
+                            root.TryGetProperty("value", out var sv) && (sv.ValueKind == JsonValueKind.True || sv.ValueKind == JsonValueKind.False)
+                                ? sv.ValueKind == JsonValueKind.True
+                                : (bool?)null);
+                        break;
+                    case "meter":
+                        SetMeter(writer, !root.TryGetProperty("enabled", out var me) || me.ValueKind != JsonValueKind.False);
+                        break;
                 }
             }
             catch (Exception ex) { Log.Error("Deck bridge command failed", ex); }
@@ -155,6 +173,38 @@ public sealed class DeckBridge : IDisposable
             // Reply to the requester with the resulting state (a mutation also broadcasts to all).
             Send(writer, StateJson());
         });
+    }
+
+    /// <summary>Enable/disable a DSP stage by its processor id. A null <paramref name="value"/> toggles.</summary>
+    private void ApplyStage(string id, bool? value)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        var st = _vm.Stages.FirstOrDefault(s => string.Equals(s.ProcessorId, id, StringComparison.OrdinalIgnoreCase));
+        if (st == null || !st.CanToggle || !st.ToggleEnabled) return;
+        st.Enabled = value ?? !st.Enabled;
+    }
+
+    /// <summary>Subscribe/unsubscribe a client to the throttled input-level stream.</summary>
+    private void SetMeter(StreamWriter writer, bool enabled)
+    {
+        lock (_clientsLock)
+        {
+            if (enabled) _meterClients.Add(writer);
+            else _meterClients.Remove(writer);
+        }
+    }
+
+    private void MeterTick()
+    {
+        StreamWriter[] targets;
+        lock (_clientsLock)
+        {
+            if (_meterClients.Count == 0) return;
+            targets = _meterClients.ToArray();
+        }
+        double level = _vm.IsRunning ? _vm.InLevel : 0.0;
+        string json = JsonSerializer.Serialize(new { type = "meter", @in = level });
+        foreach (var w in targets) Send(w, json);
     }
 
     private void ApplySet(string target, bool value)
@@ -208,6 +258,25 @@ public sealed class DeckBridge : IDisposable
         }
     }
 
+    /// <summary>Track each stage's Enabled so a stage toggled anywhere (MicForge UI, a preset load) is
+    /// mirrored back to the deck. Re-subscribes when the stage set is rebuilt.</summary>
+    private void WatchStages()
+    {
+        foreach (var s in _watchedStages) s.PropertyChanged -= OnStagePropertyChanged;
+        _watchedStages.Clear();
+        foreach (var s in _vm.Stages)
+        {
+            s.PropertyChanged += OnStagePropertyChanged;
+            _watchedStages.Add(s);
+        }
+        BroadcastState();
+    }
+
+    private void OnStagePropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(StageViewModel.Enabled)) BroadcastState();
+    }
+
     /// <summary>Push the current state to every connected client. Called on the UI thread (either
     /// from <see cref="OnVmPropertyChanged"/> or a dispatched command), so reading the VM is safe.</summary>
     private void BroadcastState()
@@ -228,6 +297,10 @@ public sealed class DeckBridge : IDisposable
             running = _vm.IsRunning,
             preset = _vm.SelectedPreset != null ? _vm.SelectedPreset.Name : "",
             presets = _vm.Presets.Select(p => p.Name).ToArray(),
+            stages = _vm.Stages
+                .Where(s => !string.IsNullOrEmpty(s.ProcessorId))
+                .Select(s => new { id = s.ProcessorId, title = s.Title, enabled = s.Enabled, canToggle = s.CanToggle && s.ToggleEnabled })
+                .ToArray(),
         };
         return JsonSerializer.Serialize(obj);
     }
@@ -253,6 +326,8 @@ public sealed class DeckBridge : IDisposable
     {
         try { _cts.Cancel(); } catch { }
         try { _vm.PropertyChanged -= OnVmPropertyChanged; } catch { }
+        try { _meterTimer?.Stop(); } catch { }
+        try { foreach (var s in _watchedStages) s.PropertyChanged -= OnStagePropertyChanged; _watchedStages.Clear(); } catch { }
         // Unblock the accept thread's WaitForConnection with a throwaway client connection.
         try
         {
