@@ -29,6 +29,7 @@ public sealed class ParamViewModel : ViewModelBase
     public double Min { get; }
     public double Max { get; }
     public double Step { get; }
+    public string Unit => _unit;
 
     public double Value
     {

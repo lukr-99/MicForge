@@ -166,6 +166,10 @@ public sealed class DeckBridge : IDisposable
                     case "meter":
                         SetMeter(writer, !root.TryGetProperty("enabled", out var me) || me.ValueKind != JsonValueKind.False);
                         break;
+                    case "param":
+                        ApplyParam(GetStr(root, "key"),
+                            root.TryGetProperty("value", out var pv) && pv.ValueKind == JsonValueKind.Number ? pv.GetDouble() : (double?)null);
+                        return;   // no full-state reply — param drags are frequent
                 }
             }
             catch (Exception ex) { Log.Error("Deck bridge command failed", ex); }
@@ -173,6 +177,20 @@ public sealed class DeckBridge : IDisposable
             // Reply to the requester with the resulting state (a mutation also broadcasts to all).
             Send(writer, StateJson());
         });
+    }
+
+    /// <summary>Sets a DSP parameter identified by "stageId|label" to an absolute value (clamped).</summary>
+    private void ApplyParam(string key, double? value)
+    {
+        if (string.IsNullOrEmpty(key) || value is not { } v) return;
+        var sep = key.IndexOf('|');
+        if (sep <= 0) return;
+        var stageId = key.Substring(0, sep);
+        var label = key.Substring(sep + 1);
+        var stage = _vm.Stages.FirstOrDefault(s => string.Equals(s.ProcessorId, stageId, StringComparison.OrdinalIgnoreCase));
+        var prm = stage?.Params.FirstOrDefault(p => string.Equals(p.Label, label, StringComparison.Ordinal));
+        if (prm == null) return;
+        prm.Value = Math.Clamp(v, prm.Min, prm.Max);
     }
 
     /// <summary>Enable/disable a DSP stage by its processor id. A null <paramref name="value"/> toggles.</summary>
@@ -300,6 +318,20 @@ public sealed class DeckBridge : IDisposable
             stages = _vm.Stages
                 .Where(s => !string.IsNullOrEmpty(s.ProcessorId))
                 .Select(s => new { id = s.ProcessorId, title = s.Title, enabled = s.Enabled, canToggle = s.CanToggle && s.ToggleEnabled })
+                .ToArray(),
+            @params = _vm.Stages
+                .Where(s => !string.IsNullOrEmpty(s.ProcessorId))
+                .SelectMany(s => s.Params.Select(p => new
+                {
+                    key = s.ProcessorId + "|" + p.Label,
+                    stage = s.Title,
+                    label = p.Label,
+                    value = p.Value,
+                    min = p.Min,
+                    max = p.Max,
+                    step = p.Step,
+                    unit = p.Unit,
+                }))
                 .ToArray(),
         };
         return JsonSerializer.Serialize(obj);
