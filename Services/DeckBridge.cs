@@ -18,14 +18,20 @@ namespace MicForge;
 /// A loopback control endpoint that lets the Relay agent (the phone-as-StreamDeck companion) drive
 /// MicForge and mirror its live state back onto the deck. Same machine only: it listens on a named
 /// pipe (<c>\\.\pipe\MicForge.DeckControl</c>), never a network socket, so it is unreachable from the
-/// LAN. Messages are newline-delimited JSON — the "Deck Control Contract" v1:
+/// LAN. Messages are newline-delimited JSON — the "Deck Control Contract" (protocol 1, additive):
 ///
 ///   client → us : {"op":"getState"}
 ///                 {"op":"set","target":"mute|bypass|running","value":true}
 ///                 {"op":"toggle","target":"mute|bypass|running"}
 ///                 {"op":"preset","name":"…"}   |   {"op":"preset","dir":"next|prev"}
+///                 {"op":"stage","id":"<processorId>"[,"value":true]}   toggle/set a DSP stage
+///                 {"op":"param","key":"<stageId>|<label>","value":12.5}  set a DSP parameter
+///                 {"op":"meter","enabled":true}                         (un)subscribe to input level
 ///   us → client : {"type":"hello","app":"MicForge","version":"…","protocol":1}
-///                 {"type":"state","mute":false,"bypass":false,"running":true,"preset":"…","presets":[…]}
+///                 {"type":"state", mute, bypass, running, preset, presets:[…],
+///                                  stages:[{id,title,enabled,canToggle}],
+///                                  params:[{key,stage,label,value,min,max,step,unit}]}
+///                 {"type":"meter","in":0.0}    input level, ~10 Hz while a client is subscribed
 ///
 /// The whole thing is best-effort and fully isolated: every path is wrapped so a bridge failure can
 /// never touch MicForge's audio path or UI.
@@ -145,8 +151,7 @@ public sealed class DeckBridge : IDisposable
                 {
                     case "getState": break;   // reply below
                     case "set":
-                        ApplySet(GetStr(root, "target"),
-                            root.TryGetProperty("value", out var v) && v.ValueKind == JsonValueKind.True);
+                        ApplySet(GetStr(root, "target"), BoolOrNull(root, "value") ?? false);
                         break;
                     case "toggle":
                         ApplyToggle(GetStr(root, "target"));
@@ -158,17 +163,13 @@ public sealed class DeckBridge : IDisposable
                             SelectPreset(GetStr(root, "name"));
                         break;
                     case "stage":
-                        ApplyStage(GetStr(root, "id"),
-                            root.TryGetProperty("value", out var sv) && (sv.ValueKind == JsonValueKind.True || sv.ValueKind == JsonValueKind.False)
-                                ? sv.ValueKind == JsonValueKind.True
-                                : (bool?)null);
+                        ApplyStage(GetStr(root, "id"), BoolOrNull(root, "value"));   // null = toggle
                         break;
                     case "meter":
-                        SetMeter(writer, !root.TryGetProperty("enabled", out var me) || me.ValueKind != JsonValueKind.False);
+                        SetMeter(writer, BoolOrNull(root, "enabled") ?? true);
                         break;
                     case "param":
-                        ApplyParam(GetStr(root, "key"),
-                            root.TryGetProperty("value", out var pv) && pv.ValueKind == JsonValueKind.Number ? pv.GetDouble() : (double?)null);
+                        ApplyParam(GetStr(root, "key"), DoubleOrNull(root, "value"));
                         return;   // no full-state reply — param drags are frequent
                 }
             }
@@ -353,6 +354,15 @@ public sealed class DeckBridge : IDisposable
 
     private static string GetStr(JsonElement e, string name)
         => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : "";
+
+    /// <summary>A JSON bool field, or null if absent/not a boolean.</summary>
+    private static bool? BoolOrNull(JsonElement e, string name)
+        => e.TryGetProperty(name, out var v) && (v.ValueKind == JsonValueKind.True || v.ValueKind == JsonValueKind.False)
+            ? v.GetBoolean() : (bool?)null;
+
+    /// <summary>A JSON number field, or null if absent/not a number.</summary>
+    private static double? DoubleOrNull(JsonElement e, string name)
+        => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : (double?)null;
 
     public void Dispose()
     {

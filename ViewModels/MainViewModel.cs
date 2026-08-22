@@ -267,7 +267,17 @@ public sealed partial class MainViewModel : ViewModelBase
         catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
     }
 
-    public string VersionText => "MicForge · v1.6.3 · PolyForm Noncommercial 1.0.0";
+    public string VersionText => $"MicForge · v{AppVersion} · PolyForm Noncommercial 1.0.0";
+
+    /// <summary>Marketing version (Major.Minor.Patch) read from the assembly, set by the csproj.</summary>
+    private static string AppVersion
+    {
+        get
+        {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return v == null ? "0" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+    }
 
     // ---- stages ----
     public ObservableCollection<StageViewModel> Stages { get; } = new();
