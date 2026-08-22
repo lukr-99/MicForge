@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Input;
@@ -14,15 +15,17 @@ namespace MicForge.ViewModels;
 public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly AudioEngine _engine;
+    private readonly DotNetLib.Core.Updating.UpdateService _updater;
     private readonly string _settingsPath = Settings.DefaultPath();
     private readonly DispatcherTimer _meterTimer;
 
     public event Action ExitRequested;
     public event Action ShowRequested;
 
-    public MainViewModel(AudioEngine engine)
+    public MainViewModel(AudioEngine engine, DotNetLib.Core.Updating.UpdateService updater)
     {
         _engine = engine;
+        _updater = updater;
 
         LoadDevices();
         var saved = Settings.Load(_settingsPath);
@@ -61,6 +64,8 @@ public sealed partial class MainViewModel : ViewModelBase
         _histTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
         _histTimer.Tick += (_, _) => CaptureHistory();
         _histTimer.Start();
+
+        _ = CheckForUpdates();   // best-effort background check on launch
     }
 
     // Commands are generated from the [RelayCommand] methods below (CommunityToolkit.Mvvm).
@@ -277,6 +282,48 @@ public sealed partial class MainViewModel : ViewModelBase
             var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             return v == null ? "0" : $"{v.Major}.{v.Minor}.{v.Build}";
         }
+    }
+
+    // ---- updates (self-update via GitHub Releases) ----
+    private DotNetLib.Core.Updating.ReleaseInfo _pendingUpdate;
+
+    private string _updateStatus = "";
+    public string UpdateStatus { get => _updateStatus; private set => Set(ref _updateStatus, value); }
+
+    private bool _updateAvailable;
+    public bool UpdateAvailable { get => _updateAvailable; private set => Set(ref _updateAvailable, value); }
+
+    private bool _checkingUpdate;
+    public bool CheckingUpdate { get => _checkingUpdate; private set => Set(ref _checkingUpdate, value); }
+
+    [RelayCommand]
+    private async Task CheckForUpdates()
+    {
+        CheckingUpdate = true;
+        UpdateStatus = "Checking…";
+        try
+        {
+            _pendingUpdate = await _updater.CheckForUpdateAsync();
+            UpdateAvailable = _pendingUpdate != null;
+            UpdateStatus = _pendingUpdate != null
+                ? $"Update available: v{_pendingUpdate.Version} (you're on v{AppVersion})."
+                : $"You're up to date (v{AppVersion}).";
+        }
+        catch (Exception ex) { Log.Error("update check failed", ex); UpdateStatus = "Update check failed."; }
+        finally { CheckingUpdate = false; }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdate()
+    {
+        if (_pendingUpdate == null) return;
+        UpdateStatus = $"Downloading v{_pendingUpdate.Version}…";
+        try
+        {
+            await _updater.DownloadAndLaunchAsync(_pendingUpdate, "/SILENT /SUPPRESSMSGBOXES /NORESTART");
+            ExitRequested?.Invoke();   // quit so the installer can replace files
+        }
+        catch (Exception ex) { Log.Error("update install failed", ex); UpdateStatus = "Update download failed."; }
     }
 
     // ---- stages ----
