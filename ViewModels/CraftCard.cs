@@ -21,7 +21,7 @@ public sealed partial class CraftCard : ViewModelBase
         Id = cfg.Id;
         Icon = cfg.Icon;
         Title = cfg.Title;
-        Category = string.IsNullOrWhiteSpace(cfg.Category) ? "Tones" : cfg.Category;
+        Category = string.IsNullOrWhiteSpace(cfg.Category) ? "Tone" : cfg.Category;
         Blurb = cfg.Blurb;
         Explanation = string.IsNullOrWhiteSpace(cfg.Explanation) ? cfg.Blurb : cfg.Explanation;
         Pitch = cfg.Pitch;
