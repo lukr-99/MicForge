@@ -5,8 +5,8 @@ configurable DSP chain, and outputs to a virtual audio device so **any** app (Di
 games, browser, calls) uses the cleaned-up, shaped signal as its "microphone".
 
 Written in **C# / .NET 10 / WPF** using [NAudio](https://github.com/naudio/NAudio) for WASAPI
-capture and render. All DSP is **hand-written** (no VST/plugin host), and the dark UI is a
-**hand-rolled theme** (no control-library dependency).
+capture and render. All DSP is **hand-written** (no VST/plugin host). The tray and settings UI
+use **DotNetLib.Tray**; processor controls remain custom.
 
 > See [ARCHITECTURE.md](ARCHITECTURE.md) for the code layout and design, and
 > [ROADMAP.md](ROADMAP.md) for where it's going.
@@ -48,8 +48,8 @@ runs internally at **mono, 32-bit float, 48 kHz**.
   live preview voice and per-card info + "technical peek".
 - **Meters** — spectrogram, signal-flow, loudness suite.
 - **Shortcuts** — configure global hotkeys and push-to-talk.
-- **Settings** — startup/tray, self-monitoring device, reliability & diagnostics, profile
-  export/import, presets folder, undo/redo.
+- **Settings**: one scrolling page with section cards, responsive jump navigation and save feedback.
+  Includes monitoring, reliability, startup/tray, profile export/import, presets, undo/redo and updates.
 
 ## Requirements
 
@@ -87,7 +87,7 @@ before enabling the stage.
 Everything is under `%AppData%\MicForge\` so it survives uninstall/reinstall:
 
 - `micforge.json` — your full setup (chain params, devices, stage order, hotkeys, crafting,
-  last preset)
+  last preset, theme)
 - `craftcards.json` — Crafting card definitions (editable; built-ins refresh on update)
 - `presets\*.json` — your saved presets (auto-loaded into the dropdown)
 - `samples\*.wav` — your own Crafting preview voices
@@ -96,9 +96,15 @@ Everything is under `%AppData%\MicForge\` so it survives uninstall/reinstall:
 ## Building & packaging
 
 ```bash
+# restore (requires read:packages credentials for the dotnetlib source)
+dotnet restore MicForge.csproj
+
 # build / run
 dotnet build -c Release
 dotnet run   -c Release
+
+# compatibility, tray state and WPF settings tests
+dotnet test tests/MicForge.Tests/MicForge.Tests.csproj -c Release
 
 # self-contained publish (what the installer bundles)
 dotnet publish -c Release -r win-x64 --self-contained true
@@ -119,3 +125,16 @@ The bundled preview voice clip is a CC BY-NC excerpt — see
 ## License
 
 [PolyForm Noncommercial 1.0.0](LICENSE.md) — free for noncommercial use.
+
+## Shared tray and settings kit
+
+`DotNetLib.Core` and `DotNetLib.Tray` 0.4.1 come from the private GitHub Packages feed in
+`nuget.config`. Set credentials for the `dotnetlib` source in your user NuGet configuration,
+or provide `NuGetPackageSourceCredentials_dotnetlib` in the environment with
+`Username=<GitHub user>;Password=<read:packages token>`. Keep credentials out of this repository.
+
+The tray opens MicForge on a left click. Its menu shows processing status and provides start/stop,
+mute, bypass, Settings, startup and theme controls. System, Light and Dark apply without restarting;
+high contrast follows Windows. Existing settings files default to Dark when they have no theme
+field. Settings and presets stay in the same AppData folder. The migration does not install or
+publish an app release.

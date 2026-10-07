@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using MicForge.ViewModels;
-using WinForms = System.Windows.Forms;
 
 namespace MicForge;
 
@@ -20,12 +19,16 @@ public partial class MainWindow : Window
     private readonly OsdWindow _osd;
     private DeckBridge _bridge;
     private bool _exiting;
+    private bool _cleanedUp;
     private bool _shownBalloon;
+    private readonly AppTheme _theme;
 
-    public MainWindow(MainViewModel vm)
+    public MainWindow(MainViewModel vm, AppTheme theme)
     {
         InitializeComponent();
         _vm = vm;
+        _theme = theme;
+        _theme.Applied += OnThemeApplied;
         DataContext = _vm;
 
         _vm.ExitRequested += ExitApp;
@@ -63,7 +66,7 @@ public partial class MainWindow : Window
         try
         {
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
-            int on = 1;
+            int on = _theme.IsDark ? 1 : 0;
             if (DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int)) != 0)
                 DwmSetWindowAttribute(hwnd, 19, ref on, sizeof(int));
         }
@@ -109,9 +112,7 @@ public partial class MainWindow : Window
             HideToTray(showBalloon: true);
             return;
         }
-        _bridge?.Dispose();
-        _vm.Shutdown();
-        _tray?.Dispose();
+        CleanUp();
     }
 
     private void OnMuteFlash(bool muted)
@@ -123,25 +124,44 @@ public partial class MainWindow : Window
     private void ExitApp()
     {
         _exiting = true;
+        CleanUp();
+        Application.Current.Shutdown();
+    }
+
+    private void CleanUp()
+    {
+        if (_cleanedUp) return;
+        _cleanedUp = true;
         _bridge?.Dispose();
         _hotkeys?.Dispose();
         _kbHook?.Dispose();
         _osd?.Close();
         _vm.Shutdown();
+        _theme.Applied -= OnThemeApplied;
+        _vm.PropertyChanged -= OnVmPropertyChanged;
         _tray?.Dispose();
-        Application.Current.Shutdown();
     }
 
     private void HideToTray(bool showBalloon)
     {
         Hide();
-        if (_tray != null) _tray.Visible = true;
+
         if (showBalloon && !_shownBalloon && _tray != null)
         {
-            _tray.ShowBalloonTip(1500, "MicForge", "Still running — click the tray icon to reopen.",
-                WinForms.ToolTipIcon.None);
+            _tray.Notify("MicForge", "Still running. Click the tray icon to reopen.");
             _shownBalloon = true;
         }
+    }
+
+    private void OnThemeApplied(object sender, EventArgs e)
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != IntPtr.Zero)
+        {
+            int dark = _theme.IsDark ? 1 : 0;
+            DwmSetWindowAttribute(handle, 20, ref dark, sizeof(int));
+        }
+        UpdateTrayIcon();
     }
 
     internal void ShowFromTray()
@@ -151,5 +171,11 @@ public partial class MainWindow : Window
         Activate();
         Topmost = true;
         Topmost = false;
+    }
+
+    internal void OnLaunchedAgain()
+    {
+        ShowFromTray();
+        _tray?.Notify("MicForge", "MicForge is already running. The existing window is open.");
     }
 }

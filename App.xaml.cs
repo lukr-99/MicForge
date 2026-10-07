@@ -3,6 +3,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using DotNetLib.Tray;
 
 namespace MicForge;
 
@@ -12,9 +13,7 @@ public partial class App : Application
     public static bool StartHidden { get; private set; }
 
     private const string InstanceName = "MicForge_SingleInstance_9a1f";
-    private const string ShowSignalName = "MicForge_ShowWindow_9a1f";
-    private Mutex _instanceMutex;
-    private EventWaitHandle _showSignal;
+    private SingleInstance _instance;
     private ServiceProvider _services;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -23,16 +22,23 @@ public partial class App : Application
             if (string.Equals(a, "--tray", StringComparison.OrdinalIgnoreCase))
                 StartHidden = true;
 
-        // Single instance: if MicForge is already running, wake it and exit this copy.
-        _instanceMutex = new Mutex(true, InstanceName, out bool isPrimary);
-        _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSignalName);
-        if (!isPrimary)
+        // Wake an older installed version during the transition to the shared instance lock.
+        if (Mutex.TryOpenExisting(InstanceName, out var legacy))
         {
-            try { _showSignal.Set(); } catch { }   // ask the running instance to come forward
+            legacy.Dispose();
+            using var signal = new EventWaitHandle(false, EventResetMode.AutoReset, "MicForge_ShowWindow_9a1f");
+            signal.Set();
             Shutdown();
             return;
         }
-        StartShowSignalListener();
+
+        _instance = SingleInstance.TryAcquire("MicForge");
+        if (_instance == null)
+        {
+            SingleInstance.Knock("MicForge");
+            Shutdown();
+            return;
+        }
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -41,41 +47,32 @@ public partial class App : Application
         Log.Info($"MicForge starting (v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}).");
         base.OnStartup(e);
 
+        var appStyles = Resources.MergedDictionaries[0];
+        Resources.MergedDictionaries.Remove(appStyles);
+        DotNetLib.Tray.TrayResources.Merge(Resources);
+        Resources.MergedDictionaries.Add(appStyles);
+
         // Compose the object graph and show the main window (constructor-injected).
         _services = Composition.Build();
         var window = _services.GetRequiredService<MainWindow>();
         MainWindow = window;
+        _instance.Listen(() => Dispatcher.BeginInvoke(() => window.OnLaunchedAgain()));
         window.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _services?.Dispose();
+        _instance?.Dispose();
         base.OnExit(e);
-    }
-
-    /// <summary>Background wait for a second launch asking us to show the window.</summary>
-    private void StartShowSignalListener()
-    {
-        var t = new Thread(() =>
-        {
-            while (true)
-            {
-                try { _showSignal.WaitOne(); }
-                catch { return; }
-                Dispatcher.BeginInvoke(() => (MainWindow as MainWindow)?.ShowFromTray());
-            }
-        })
-        { IsBackground = true, Name = "MicForge-ShowSignal" };
-        t.Start();
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log.Error("Unhandled UI exception", e.Exception);
-        MessageBox.Show(
+        TrayMessageWindow.Inform("MicForge",
             "MicForge hit an unexpected error and logged the details.\n\n" + e.Exception.Message,
-            "MicForge", MessageBoxButton.OK, MessageBoxImage.Warning);
+            prepare: window => _services?.GetService<AppTheme>()?.Attach(window));
         e.Handled = true;   // keep the app alive; the error is logged
     }
 }

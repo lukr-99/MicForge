@@ -55,7 +55,7 @@ public sealed partial class MainViewModel
         else
         {
             var s = Settings.Load(item.Path);
-            if (s == null) { MessageBox.Show("Could not read that preset.", "MicForge"); return; }
+            if (s == null) { ShowMessage("Could not read that preset.", "MicForge"); return; }
             s.ApplyTo(_engine.Chain);
             BuildStages();
             ApplyStageOrder(s.StageOrder);
@@ -74,7 +74,7 @@ public sealed partial class MainViewModel
             System.Diagnostics.Process.Start(
                 new System.Diagnostics.ProcessStartInfo(PresetLibrary.Folder) { UseShellExecute = true });
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+        catch (Exception ex) { ShowMessage(ex.Message, "MicForge"); }
     }
 
     [RelayCommand]
@@ -97,7 +97,7 @@ public sealed partial class MainViewModel
             _lastPreset = name;
             SaveSettings();
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+        catch (Exception ex) { ShowMessage(ex.Message, "MicForge"); }
     }
 
     [RelayCommand]
@@ -108,7 +108,7 @@ public sealed partial class MainViewModel
         if (dlg.ShowDialog() != true) return;
 
         var s = Settings.Load(dlg.FileName);
-        if (s == null) { MessageBox.Show("Could not read that preset.", "MicForge"); return; }
+        if (s == null) { ShowMessage("Could not read that preset.", "MicForge"); return; }
 
         s.ApplyTo(_engine.Chain);
         SelectDefaults(s);

@@ -1,0 +1,67 @@
+<UserControl x:Class="MicForge.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tray="https://github.com/lukr-99/dotnetlib/tray"
+             Foreground="{DynamicResource TextBrush}">
+    <tray:SettingsPage Title="Settings">
+        <tray:SettingsSection SectionId="problems" Title="Problems" Description="Your latest changes could not be saved."
+                             Visibility="{Binding SettingsSaveFailed, Converter={StaticResource BoolToVis}}">
+            <tray:ButtonRow Label="Save settings" Hint="Check that your data folder is writable, then retry."
+                            ButtonText="Retry" Command="{Binding RetrySaveSettingsCommand}" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="general" Title="General" Description="How MicForge looks.">
+            <tray:SegmentedRow Label="Theme" Hint="System follows Windows, including high contrast."
+                               Options="{Binding ThemeOptions}" SelectedItem="{Binding ThemeMode}"
+                               ShowsSavedAutomatically="False" SelectionChanged="Choice_Changed" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="monitoring" Title="Monitoring" Description="Hear the processed mic in your headphones.">
+            <tray:ToggleRow Label="Monitoring" Hint="Use headphones to avoid feedback."
+                            IsOn="{Binding MonitorEnabled}" ShowsSavedAutomatically="False" Toggled="Toggle_Changed" />
+            <tray:DropdownRow Label="Monitor device" Hint="Where you hear the processed audio."
+                              Options="{Binding Outputs}" SelectedItem="{Binding SelectedMonitorDevice}" DisplayMemberPath="Name"
+                              IsEnabled="{Binding MonitorEnabled}" DisabledReason="Turn on Monitoring to choose a device."
+                              ShowsSavedAutomatically="False" SelectionChanged="Choice_Changed" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="reliability" Title="Reliability" Description="Keep processing when your input changes.">
+            <tray:ToggleRow Label="Follow the Windows default mic" Hint="Switch when the default microphone changes."
+                            IsOn="{Binding FollowDefaultInput}" ShowsSavedAutomatically="False" Toggled="Toggle_Changed" />
+            <tray:InfoRow Label="DSP load" Value="{Binding DspLoadText}" />
+            <tray:InfoRow Label="Glitches" Value="{Binding GlitchText}" />
+            <tray:ButtonRow Label="Open logs" Hint="Find session and crash diagnostics."
+                            ButtonText="Open" Command="{Binding OpenLogsCommand}" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="startup" Title="Startup" Description="What happens when you sign in and close the window.">
+            <tray:ToggleRow Label="Start with Windows" Hint="Open MicForge in the tray at sign-in."
+                            IsOn="{Binding StartWithWindows}" ShowsSavedAutomatically="False" Toggled="Toggle_Changed" />
+            <tray:ToggleRow Label="Auto-start processing" Hint="Begin processing when MicForge opens."
+                            IsOn="{Binding AutoStartProcessing}" ShowsSavedAutomatically="False" Toggled="Toggle_Changed" />
+            <tray:ToggleRow Label="Close to tray" Hint="Keep processing when you close or minimize the window."
+                            IsOn="{Binding MinimizeToTray}" ShowsSavedAutomatically="False" Toggled="Toggle_Changed" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="data" Title="Your data" Description="Export your setup or manage saved presets.">
+            <tray:ButtonRow Label="Export profile" Hint="Save your current setup to a JSON file."
+                            ButtonText="Export..." Command="{Binding SavePresetCommand}" />
+            <tray:ButtonRow Label="Import profile" Hint="Apply a saved setup and add it to your presets."
+                            ButtonText="Import..." Command="{Binding LoadPresetCommand}" />
+            <tray:ButtonRow Label="Presets folder" Hint="Your saved preset files."
+                            ButtonText="Open" Command="{Binding OpenPresetsFolderCommand}" />
+            <tray:ButtonRow Label="Undo" Hint="Restore the previous processing changes."
+                            ButtonText="Undo" Command="{Binding UndoCommand}" />
+            <tray:ButtonRow Label="Redo" Hint="Apply the processing changes you undid."
+                            ButtonText="Redo" Command="{Binding RedoCommand}" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="updates" Title="Updates" Description="New versions of MicForge.">
+            <tray:InfoRow Label="Version" Value="{Binding VersionText}" />
+            <tray:ButtonRow Label="Check for updates" Hint="{Binding UpdateStatus}" ButtonText="Check now"
+                            BusyText="Checking..." IsBusy="{Binding CheckingUpdate}" Command="{Binding CheckForUpdatesCommand}" />
+            <tray:ButtonRow Label="Install update" Hint="{Binding UpdateStatus}" ButtonText="Install"
+                            Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"
+                            Command="{Binding InstallUpdateCommand}" />
+            <tray:ButtonRow Label="Release notes" Hint="Read changes or download an installer."
+                            ButtonText="Open" Command="{Binding OpenReleaseNotesCommand}" />
+        </tray:SettingsSection>
+        <tray:SettingsSection SectionId="about" Title="About" Description="A real-time microphone processor for Windows.">
+            <tray:InfoRow Label="License" Value="PolyForm Noncommercial 1.0.0" />
+        </tray:SettingsSection>
+    </tray:SettingsPage>
+</UserControl>

@@ -23,7 +23,7 @@ public sealed partial class MainViewModel
     {
         if (!(_engine.Running || _engine.Reconnecting))
         {
-            MessageBox.Show("Start processing first, then stay quiet for a moment while MicForge samples the room.",
+            ShowMessage("Start processing first, then stay quiet for a moment while MicForge samples the room.",
                 "Learn noise floor");
             return;
         }
@@ -43,7 +43,7 @@ public sealed partial class MainViewModel
     {
         if (!(_engine.Running || _engine.Reconnecting))
         {
-            MessageBox.Show("Start processing first. Then the wizard asks you to stay quiet for a moment, then talk normally.",
+            ShowMessage("Start processing first. Then the wizard asks you to stay quiet for a moment, then talk normally.",
                 "Auto-calibrate");
             return;
         }

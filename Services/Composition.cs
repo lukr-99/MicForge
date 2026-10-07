@@ -20,6 +20,7 @@ public static class Composition
         var services = new ServiceCollection();
 
         services.AddSingleton<AudioEngine>();
+        services.AddSingleton(sp => new AppTheme(System.Windows.Application.Current.Resources));
 
         // Self-update against the app's public GitHub Releases (see DotNetLib.Core.Updating).
         services.AddSingleton<HttpClient>();
@@ -37,9 +38,11 @@ public static class Composition
         return services.BuildServiceProvider();
     }
 
-    /// <summary>Marketing version (Major.Minor.Patch) read from the assembly, set by the csproj.</summary>
-    private static string CurrentVersion()
+    /// <summary>Version including the development suffix, without build metadata.</summary>
+    internal static string CurrentVersion()
     {
+        var informational = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(informational)) return informational.Split('+')[0];
         var v = Assembly.GetExecutingAssembly().GetName().Version;
         return v == null ? "0.0.0" : $"{v.Major}.{v.Minor}.{v.Build}";
     }

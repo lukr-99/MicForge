@@ -11,7 +11,6 @@ namespace MicForge;
 /// <summary>Draws the MicForge icon at runtime (no .ico asset needed).</summary>
 internal static class IconFactory
 {
-    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr handle);
     [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
 
     private static Bitmap Draw(int size)
@@ -53,11 +52,21 @@ internal static class IconFactory
 
     public enum TrayState { Stopped, Live, Muted }
 
-    public static Icon CreateIcon() => CreateIcon(TrayState.Stopped);
+    public static byte[] CreateTrayIcon(TrayState state) =>
+        DotNetLib.Tray.IconFile.Create(DotNetLib.Tray.IconFile.TraySizes, size =>
+            DotNetLib.Tray.IconFile.Render(size, (context, _) =>
+            {
+                using var bitmap = DrawStatus(size, state);
+                using var stream = new System.IO.MemoryStream();
+                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                stream.Position = 0;
+                var frame = BitmapFrame.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                context.DrawImage(frame, new Rect(0, 0, size, size));
+            }));
 
-    public static Icon CreateIcon(TrayState state)
+    private static Bitmap DrawStatus(int size, TrayState state)
     {
-        using var bmp = Draw(32);
+        var bmp = Draw(size);
         using (var g = Graphics.FromImage(bmp))
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -65,20 +74,18 @@ internal static class IconFactory
             {
                 using var dot = new SolidBrush(Color.FromArgb(0x7F, 0xB0, 0x69));
                 using var ring = new Pen(Color.FromArgb(0x14, 0x16, 0x19), 1.5f);
-                g.FillEllipse(dot, 32 * 0.56f, 32 * 0.56f, 32 * 0.40f, 32 * 0.40f);
-                g.DrawEllipse(ring, 32 * 0.56f, 32 * 0.56f, 32 * 0.40f, 32 * 0.40f);
+                g.FillEllipse(dot, size * 0.56f, size * 0.56f, size * 0.40f, size * 0.40f);
+                g.DrawEllipse(ring, size * 0.56f, size * 0.56f, size * 0.40f, size * 0.40f);
             }
             else if (state == TrayState.Muted)
             {
-                using var pen = new Pen(Color.FromArgb(0xE5, 0x54, 0x3B), Math.Max(2f, 32 * 0.10f))
+                using var pen = new Pen(Color.FromArgb(0xE5, 0x54, 0x3B), Math.Max(2f, size * 0.10f))
                 { StartCap = LineCap.Round, EndCap = LineCap.Round };
-                g.DrawLine(pen, 32 * 0.20f, 32 * 0.22f, 32 * 0.80f, 32 * 0.78f);
+                g.DrawLine(pen, size * 0.20f, size * 0.22f, size * 0.80f, size * 0.78f);
             }
         }
 
-        IntPtr h = bmp.GetHicon();
-        try { using var tmp = Icon.FromHandle(h); return (Icon)tmp.Clone(); }
-        finally { DestroyIcon(h); }
+        return bmp;
     }
 
     public static System.Windows.Media.ImageSource CreateImageSource()

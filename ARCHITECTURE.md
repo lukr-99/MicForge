@@ -5,8 +5,8 @@ runs a configurable DSP chain (gate, EQ, compressor, de-esser, character effects
 renders the shaped signal to an output device — normally the VB-CABLE virtual mic, so any
 app (Discord/OBS/games) hears the processed voice.
 
-- **Stack:** C# / .NET 10 (`net10.0-windows`), WPF (MVVM) for the UI, WinForms only for the
-  tray `NotifyIcon`. Single third-party dependency: **NAudio 2.2.1** (WASAPI capture/render).
+- **Stack:** C# / .NET 10 (`net10.0-windows`), WPF (MVVM) for the UI, **DotNetLib.Tray 0.4.1** for the tray, settings, theming and dialogs.
+  **NAudio 2.2.1** handles WASAPI capture/render.
   All DSP is hand-written — no VST/plugin host.
 - **Internal audio format:** mono, 32-bit float, 48 kHz.
 - **Libraries:** NAudio (audio I/O), **CommunityToolkit.Mvvm** (view-model source generators),
@@ -139,3 +139,21 @@ All user state lives under `%AppData%\MicForge\` so it survives uninstall/reinst
    the processor in the `procs` array (same order as the cards are added).
 
 Existing saved chain orders automatically slot the new stage near its default index.
+
+## Shared tray and settings
+
+`AppTheme` applies `TrayThemeApplier` and maps the shared semantic brushes into the existing
+processor controls. `MainWindow.Tray.cs` adapts processing commands to `TrayIconHost` and
+`TrayMenuBuilder`. `TrayStatus` describes status without WPF dependencies. `IconFile` makes
+multi-size icons from MicForge's drawing; the host owns its decoded copies. `SingleInstance`
+owns the per-user lock and re-launch pipe, with an upgrade check for older running versions.
+
+`SettingsView` uses `SettingsPage`, section cards and row controls. The kit owns scrolling,
+current-section tracking, responsive navigation, highlights and reduced motion. Only a failed
+save makes the Problems section visible. MainViewModel persists app options immediately after
+initialization, so selecting devices during restoration cannot overwrite a partial startup
+snapshot. The settings JSON gains an optional Theme field with Dark as its compatibility default.
+
+The migration leaves the DSP chain, preset format and AppData locations unchanged. Tests load old
+settings, round-trip profiles, check status precedence and load the settings page in a real STA
+window in both light and dark, including narrow navigation, a busy row and a disabled row.

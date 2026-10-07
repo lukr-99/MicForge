@@ -15,6 +15,8 @@ namespace MicForge.ViewModels;
 public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly AudioEngine _engine;
+    private readonly AppTheme _theme;
+    private bool _settingsReady;
     private readonly DotNetLib.Core.Updating.UpdateService _updater;
     private readonly string _settingsPath = Settings.DefaultPath();
     private readonly DispatcherTimer _meterTimer;
@@ -22,9 +24,10 @@ public sealed partial class MainViewModel : ViewModelBase
     public event Action ExitRequested;
     public event Action ShowRequested;
 
-    public MainViewModel(AudioEngine engine, DotNetLib.Core.Updating.UpdateService updater)
+    public MainViewModel(AudioEngine engine, DotNetLib.Core.Updating.UpdateService updater, AppTheme theme)
     {
         _engine = engine;
+        _theme = theme;
         _updater = updater;
 
         LoadDevices();
@@ -44,6 +47,8 @@ public sealed partial class MainViewModel : ViewModelBase
             _pttHoldToTalk = saved.PttHoldToTalk;
             _pttVk = saved.PttVk;
         }
+        _themeMode = saved?.Theme ?? "Dark";
+        _theme.Apply(_themeMode);
         SelectDefaults(saved);
         BuildStages();
         ApplyStageOrder(saved?.StageOrder);
@@ -65,6 +70,7 @@ public sealed partial class MainViewModel : ViewModelBase
         _histTimer.Tick += (_, _) => CaptureHistory();
         _histTimer.Start();
 
+        _settingsReady = true;
         _ = CheckForUpdates();   // best-effort background check on launch
     }
 
@@ -142,6 +148,23 @@ public sealed partial class MainViewModel : ViewModelBase
     private string _statusText = "Stopped";
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
 
+    public string[] ThemeOptions { get; } = { "System", "Light", "Dark" };
+    private string _themeMode = "Dark";
+    public string ThemeMode
+    {
+        get => _themeMode;
+        set
+        {
+            if (value is not ("System" or "Light" or "Dark") || !Set(ref _themeMode, value)) return;
+            _theme.Apply(value);
+            SaveSettings();
+        }
+    }
+
+    [RelayCommand]
+    private void OpenReleaseNotes() => System.Diagnostics.Process.Start(
+        new System.Diagnostics.ProcessStartInfo("https://github.com/lukr-99/MicForge/releases") { UseShellExecute = true });
+
     // ---- options ----
     private bool _startWithWindows;
     public bool StartWithWindows
@@ -151,10 +174,10 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     private bool _autoStartProcessing;
-    public bool AutoStartProcessing { get => _autoStartProcessing; set => Set(ref _autoStartProcessing, value); }
+    public bool AutoStartProcessing { get => _autoStartProcessing; set { if (Set(ref _autoStartProcessing, value)) SaveSettings(); } }
 
     private bool _minimizeToTray = true;
-    public bool MinimizeToTray { get => _minimizeToTray; set => Set(ref _minimizeToTray, value); }
+    public bool MinimizeToTray { get => _minimizeToTray; set { if (Set(ref _minimizeToTray, value)) SaveSettings(); } }
 
     private bool _visualMode;
     public bool VisualMode { get => _visualMode; set => Set(ref _visualMode, value); }
@@ -194,14 +217,14 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool MonitorEnabled
     {
         get => _monitorEnabled;
-        set { if (Set(ref _monitorEnabled, value)) ApplyMonitor(); }
+        set { if (Set(ref _monitorEnabled, value)) { ApplyMonitor(); SaveSettings(); } }
     }
 
     private DeviceInfo _selectedMonitorDevice;
     public DeviceInfo SelectedMonitorDevice
     {
         get => _selectedMonitorDevice;
-        set { if (Set(ref _selectedMonitorDevice, value)) ApplyMonitor(); }
+        set { if (Set(ref _selectedMonitorDevice, value)) { ApplyMonitor(); SaveSettings(); } }
     }
 
     private void ApplyMonitor() => _engine.ConfigureMonitor(_selectedMonitorDevice, _monitorEnabled);
@@ -269,20 +292,13 @@ public sealed partial class MainViewModel : ViewModelBase
                 : new System.Diagnostics.ProcessStartInfo(Log.Folder) { UseShellExecute = true };
             System.Diagnostics.Process.Start(psi);
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+        catch (Exception ex) { ShowMessage(ex.Message, "MicForge"); }
     }
 
     public string VersionText => $"MicForge · v{AppVersion} · PolyForm Noncommercial 1.0.0";
 
-    /// <summary>Marketing version (Major.Minor.Patch) read from the assembly, set by the csproj.</summary>
-    private static string AppVersion
-    {
-        get
-        {
-            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            return v == null ? "0" : $"{v.Major}.{v.Minor}.{v.Build}";
-        }
-    }
+    /// <summary>Release or development version read from assembly metadata.</summary>
+    private static string AppVersion => Composition.CurrentVersion();
 
     // ---- updates (self-update via GitHub Releases) ----
     private DotNetLib.Core.Updating.ReleaseInfo _pendingUpdate;
@@ -440,7 +456,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
         if (SelectedInput == null || SelectedOutput == null)
         {
-            MessageBox.Show("Select an input and an output device first.", "MicForge");
+            ShowMessage("Select an input and an output device first.", "MicForge");
             return;
         }
 
@@ -452,7 +468,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Could not start audio");
+            ShowMessage(ex.Message, "Could not start audio");
         }
     }
 
@@ -462,6 +478,7 @@ public sealed partial class MainViewModel : ViewModelBase
         var s = Settings.CaptureFrom(_engine.Chain);
         s.InputDeviceId = SelectedInput?.Id;
         s.OutputDeviceId = SelectedOutput?.Id;
+        s.Theme = ThemeMode;
         s.AutoStartProcessing = AutoStartProcessing;
         s.StartMinimized = MinimizeToTray;
         s.VisualMode = VisualMode;
@@ -482,8 +499,35 @@ public sealed partial class MainViewModel : ViewModelBase
 
     public void SaveSettings()
     {
-        try { Snapshot().Save(_settingsPath); } catch { }
+        TrySaveSettings();
     }
+
+    public bool TrySaveSettings()
+    {
+        if (!_settingsReady) return false;
+        try
+        {
+            Snapshot().Save(_settingsPath);
+            SettingsSaveFailed = false;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not save settings", ex);
+            SettingsSaveFailed = true;
+            return false;
+        }
+    }
+
+    private bool _settingsSaveFailed;
+    public bool SettingsSaveFailed
+    {
+        get => _settingsSaveFailed;
+        private set => Set(ref _settingsSaveFailed, value);
+    }
+
+    [RelayCommand]
+    private void RetrySaveSettings() => SaveSettings();
 
     public void Shutdown()
     {
@@ -512,7 +556,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
         else
         {
-            MessageBox.Show(
+            ShowMessage(
                 "That file isn't a compatible RNNoise library.\n\nIt must be a 64-bit rnnoise.dll exporting " +
                 "rnnoise_create, rnnoise_destroy and rnnoise_process_frame.",
                 "MicForge");

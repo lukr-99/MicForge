@@ -2,10 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctrl="clr-namespace:MicForge.Controls"
+        xmlns:views="clr-namespace:MicForge"
         Title="MicForge" Height="820" Width="1200"
         MinHeight="620" MinWidth="960"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource WindowBrush}"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextBrush}"
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Ideal">
 
     <Window.InputBindings>
@@ -32,12 +34,12 @@
                     <Grid>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Tag="draghandle" Text="⋮⋮" FontSize="16" Cursor="SizeAll"
-                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" ToolTip="Drag to reorder"/>
                             <Border Width="20" Height="18" CornerRadius="5" Margin="0,0,9,0"
-                                    Background="{StaticResource SurfaceAltBrush}">
+                                    Background="{DynamicResource SurfaceAltBrush}">
                                 <TextBlock Text="{Binding Order}" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,9,0"
@@ -55,12 +57,12 @@
                                StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
                                HorizontalOffset="-250" VerticalOffset="4"
                                IsOpen="{Binding IsChecked, ElementName=InfoBtn}">
-                            <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                            <Border Style="{StaticResource Card}" Background="{DynamicResource SurfaceAltBrush}"
                                     Padding="14" MaxWidth="300">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
                                     <TextBlock Text="{Binding Info}" TextWrapping="Wrap" FontSize="12"
-                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                               Foreground="{DynamicResource TextMutedBrush}"/>
                                     <ItemsControl ItemsSource="{Binding Params}" Margin="0,6,0,0">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -68,7 +70,7 @@
                                                             Visibility="{Binding Help, Converter={StaticResource EmptyToCollapsed}}">
                                                     <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12"/>
                                                     <TextBlock Text="{Binding Help}" TextWrapping="Wrap" FontSize="11"
-                                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                                               Foreground="{DynamicResource TextMutedBrush}"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -79,7 +81,7 @@
                     </Grid>
 
                     <TextBlock Text="{Binding Note}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                Visibility="{Binding Note, Converter={StaticResource EmptyToCollapsed}}"/>
 
                     <Button Content="{Binding ActionText}" Command="{Binding ActionCommand}"
@@ -97,7 +99,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
                                 Visibility="{Binding IsEq, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="Preset" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                         <ComboBox Width="150" ItemsSource="{Binding EqPresetNames}"
                                   SelectedItem="{Binding SelectedEqPreset}"
                                   ToolTip="Apply an equalizer curve"/>
@@ -121,10 +123,10 @@
                                 <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
-                        <TextBlock Text="Transfer curve" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Transfer curve" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,4"/>
                         <ctrl:CompCurve Height="140" Model="{Binding}"
                                         LevelDb="{Binding DataContext.CompLevelDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,10,0,4"/>
                         <ctrl:GrHistory Height="46"
                                         Gr="{Binding DataContext.CompGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
                     </StackPanel>
@@ -137,12 +139,12 @@
                                 <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
-                        <TextBlock Text="Level vs open threshold" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Level vs open threshold" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,4"/>
                         <ctrl:ThresholdMeter Height="18"
                                              Level="{Binding DataContext.GateLevel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              Threshold="{Binding DataContext.GateThreshold, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              Active="{Binding DataContext.GateOpen, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Gain reduction" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,10,0,4"/>
                         <ctrl:GrHistory Height="40"
                                         Gr="{Binding DataContext.GateGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
                     </StackPanel>
@@ -155,7 +157,7 @@
                                 <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
-                        <TextBlock Text="Gain reduction (peaks caught)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Gain reduction (peaks caught)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,4"/>
                         <ctrl:GrHistory Height="46"
                                         Gr="{Binding DataContext.LimiterGrDb, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
                     </StackPanel>
@@ -168,7 +170,7 @@
                                 <Binding Path="DataContext.VisualMode" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
-                        <TextBlock Text="Sibilance vs threshold" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Sibilance vs threshold" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,4"/>
                         <ctrl:ThresholdMeter Height="18"
                                              Level="{Binding DataContext.DeEsserLevel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              Threshold="{Binding DataContext.DeEsserThreshold, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -191,7 +193,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0">
-                                        <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <TextBlock Text="{Binding Display}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                                     </Grid>
                                     <Slider Grid.Row="1" Style="{StaticResource Fader}" Margin="0,3,0,0"
@@ -214,11 +216,11 @@
         </Grid.ColumnDefinitions>
 
         <!-- ================= NAV RAIL ================= -->
-        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+        <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,1,0">
             <StackPanel>
                 <Border Width="32" Height="32" CornerRadius="8" Margin="0,16,0,20" HorizontalAlignment="Center"
-                        Background="{StaticResource AccentBrush}">
+                        Background="{DynamicResource AccentBrush}">
                     <TextBlock Text="M" FontWeight="Bold" FontSize="18" Foreground="White"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
@@ -284,14 +286,14 @@
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                             <TextBlock Text="MicForge" FontSize="22" FontWeight="Bold"/>
                             <TextBlock Text="microphone processor" FontSize="11"
-                                       Foreground="{StaticResource TextMutedBrush}"/>
+                                       Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
                                     VerticalAlignment="Center">
                             <Border Style="{StaticResource FieldBadge}" ToolTip="Input — your microphone">
                                 <TextBlock Text="IN" FontSize="11" FontWeight="SemiBold" Margin="10,0"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ComboBox Width="230" Margin="0,0,18,0" ItemsSource="{Binding Inputs}"
@@ -299,7 +301,7 @@
                                       DisplayMemberPath="Name" IsEnabled="{Binding NotRunning}"/>
                             <Border Style="{StaticResource FieldBadge}" ToolTip="Output — virtual mic (CABLE Input)">
                                 <TextBlock Text="OUT" FontSize="11" FontWeight="SemiBold" Margin="10,0"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ComboBox Width="230" Margin="0,0,10,0" ItemsSource="{Binding Outputs}"
@@ -319,25 +321,25 @@
                                     <TextBlock Text="MUTED" FontSize="12" FontWeight="SemiBold" Foreground="#E5543B"/>
                                 </StackPanel>
                             </Border>
-                            <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13" Padding="12,6"
+                            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="13" Padding="12,6"
                                     Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="{Binding MicHealthTip}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Ellipse Width="9" Height="9" Margin="0,0,7,0"
                                              Fill="{Binding MicHealthColor, Converter={StaticResource HexToBrush}}"/>
                                     <TextBlock Text="{Binding MicHealthText}" FontSize="12"
-                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                               Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Border>
-                            <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13"
+                            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="13"
                                     Padding="12,6" Margin="0,0,12,0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Ellipse Width="9" Height="9" Margin="0,0,7,0">
                                         <Ellipse.Style>
                                             <Style TargetType="Ellipse">
-                                                <Setter Property="Fill" Value="{StaticResource TextMutedBrush}"/>
+                                                <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                                        <Setter Property="Fill" Value="{StaticResource StartBrush}"/>
+                                                        <Setter Property="Fill" Value="{DynamicResource StartBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsReconnecting}" Value="True">
                                                         <Setter Property="Fill" Value="#E3B23C"/>
@@ -346,7 +348,7 @@
                                             </Style>
                                         </Ellipse.Style>
                                     </Ellipse>
-                                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Border>
                             <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
@@ -355,7 +357,7 @@
                                     <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource StopBrush}"/>
+                                                <Setter Property="Background" Value="{DynamicResource StopBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -383,9 +385,9 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Processing chain" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                            <TextBlock Text="Sliders" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock Text="Sliders" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}"/>
                             <CheckBox Style="{StaticResource ToggleSwitch}" Margin="8,0" IsChecked="{Binding VisualMode}"/>
-                            <TextBlock Text="Graphs" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock Text="Graphs" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
                         <ToggleButton Style="{StaticResource BypassToggle}" Content="Bypass" Margin="24,0,0,0"
                                       IsChecked="{Binding Bypassed}" ToolTip="Bypass all processing (Ctrl+B)"/>
@@ -396,7 +398,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <TextBlock Text="Preset" VerticalAlignment="Center" Margin="0,0,8,0"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                         <ComboBox Width="160" Margin="0,0,12,0" ItemsSource="{Binding Presets}"
                                   SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name"
                                   ToolTip="Load a preset (built-in or your own)"/>
@@ -431,7 +433,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="LEVELS" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                               Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
 
                     <Grid Grid.Row="1" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
@@ -448,25 +450,25 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="IN" HorizontalAlignment="Center" FontSize="11"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                         <TextBlock Grid.Column="1" Text="OUT" HorizontalAlignment="Center" FontSize="11"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                     </Grid>
 
                     <StackPanel Grid.Row="3" Margin="0,16,0,0" HorizontalAlignment="Center">
                         <TextBlock Text="COMP GR" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding GrText}" FontSize="15" FontWeight="SemiBold"
                                    HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="4" Margin="0,14,0,0" HorizontalAlignment="Center">
                         <TextBlock Text="LOUDNESS" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
                             <TextBlock Text="{Binding LufsText}" FontSize="15" FontWeight="SemiBold"/>
                             <TextBlock Text=" LUFS" FontSize="10" VerticalAlignment="Bottom" Margin="2,0,0,2"
-                                       Foreground="{StaticResource TextMutedBrush}"/>
+                                       Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
@@ -488,7 +490,7 @@
                             <TextBlock Text="Craft your voice" FontSize="20" FontWeight="Bold"/>
                             <TextBlock Text="Stack character cards and dial their strength — they blend into the EQ, pitch and saturation live. No technical knobs required."
                                        FontSize="11" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
-                                       Foreground="{StaticResource TextMutedBrush}"/>
+                                       Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="Edit cards (JSON)" Command="{Binding OpenCraftFileCommand}" Margin="0,0,8,0"
@@ -506,7 +508,7 @@
                     <StackPanel>
                         <Grid Margin="0,0,0,6">
                             <TextBlock Text="Live preview — tone curve + spectrum" FontSize="11"
-                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <ComboBox Width="170" Margin="0,0,8,0" ItemsSource="{Binding PreviewSamples}"
                                           SelectedItem="{Binding SelectedPreviewSample}" DisplayMemberPath="Name"
@@ -519,13 +521,13 @@
                         </Grid>
                         <ctrl:EqGraph Height="180" Model="{Binding EqStage}" IsHitTestVisible="False"/>
                         <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,8,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    Text="Pick a voice and hit Play to hear the crafted result without talking (uses your monitor device, or the default output). Add… imports your own WAV; you can also drop clips into %AppData%\MicForge\samples. To use your own live voice, press Start on the Processor tab with Monitoring on."/>
                     </StackPanel>
                 </Border>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                    <TextBlock Text="Filter" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                    <TextBlock Text="Filter" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"
                                VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <RadioButton Style="{StaticResource Chip}" GroupName="craftCat" Content="All" Tag="#2EC4B6"
                                  IsChecked="{Binding SelectedCraftCategory, Converter={StaticResource StrEq}, ConverterParameter=All}"/>
@@ -569,30 +571,30 @@
                                                StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
                                                HorizontalOffset="-160" VerticalOffset="4"
                                                IsOpen="{Binding IsChecked, ElementName=CardInfo}">
-                                            <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                                            <Border Style="{StaticResource Card}" Background="{DynamicResource SurfaceAltBrush}"
                                                     Padding="14" MaxWidth="260">
                                                 <StackPanel>
                                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
                                                     <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" FontSize="12"
-                                                               Foreground="{StaticResource TextMutedBrush}"/>
+                                                               Foreground="{DynamicResource TextMutedBrush}"/>
                                                 </StackPanel>
                                             </Border>
                                         </Popup>
                                     </Grid>
                                     <TextBlock Text="{Binding Blurb}" FontSize="11" TextWrapping="Wrap" Height="30"
-                                               Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,2"/>
+                                               Foreground="{DynamicResource TextMutedBrush}" Margin="0,6,0,2"/>
                                     <ToggleButton x:Name="CardTech" Style="{StaticResource LinkToggle}"
                                                   Content="⚙ Technical peek" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                                     <Popup PlacementTarget="{Binding ElementName=CardTech}" Placement="Bottom"
                                            StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
                                            VerticalOffset="4" IsOpen="{Binding IsChecked, ElementName=CardTech}">
-                                        <Border Style="{StaticResource Card}" Background="{StaticResource SurfaceAltBrush}"
+                                        <Border Style="{StaticResource Card}" Background="{DynamicResource SurfaceAltBrush}"
                                                 Padding="12" MaxWidth="240">
                                             <StackPanel>
                                                 <TextBlock Text="What it changes (at 100%)" FontWeight="SemiBold" FontSize="12"
                                                            Margin="0,0,0,6"/>
                                                 <TextBlock Text="{Binding TechnicalPeek}" TextWrapping="Wrap" FontSize="12"
-                                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                                           Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                         </Border>
                                     </Popup>
@@ -615,14 +617,14 @@
                 <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="Signal flow — processing order (dimmed = off)" FontSize="11"
-                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
+                                   Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,8"/>
                         <ItemsControl ItemsSource="{Binding Stages}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="13"
+                                    <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="13"
                                             Padding="10,5" Margin="0,0,6,6">
                                         <Border.Style>
                                             <Style TargetType="Border">
@@ -650,7 +652,7 @@
                 <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="Spectrogram — output over time (newest on the right)" FontSize="11"
-                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+                                   Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,6"/>
                         <ctrl:Spectrogram Height="220" Model="{Binding EqStage}"/>
                     </StackPanel>
                 </Border>
@@ -659,34 +661,34 @@
                     <StackPanel>
                         <Grid>
                             <TextBlock Text="Loudness (ITU-R BS.1770 / EBU R128)" FontSize="11"
-                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                             <Button Content="Reset" Command="{Binding ResetLoudnessCommand}" HorizontalAlignment="Right"/>
                         </Grid>
                         <UniformGrid Columns="5" Margin="0,14,0,0">
                             <StackPanel>
-                                <TextBlock Text="Momentary" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Momentary" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding MomentaryLufsText}" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Text="LUFS" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="LUFS" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Text="Short-term" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Short-term" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding LufsText}" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Text="LUFS" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="LUFS" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Text="Integrated" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Integrated" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding IntegratedLufsText}" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Text="LUFS" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="LUFS" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Text="Range (LRA)" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Range (LRA)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding LraText}" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Text="LU" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="LU" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Text="True peak" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="True peak" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding TruePeakText}" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Text="dBTP" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="dBTP" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                         </UniformGrid>
                     </StackPanel>
@@ -694,163 +696,8 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- ================= SETTINGS PAGE ================= -->
-        <ScrollViewer Grid.Column="1" Margin="14" VerticalScrollBarVisibility="Auto"
-                      Visibility="{Binding IsSettingsPage, Converter={StaticResource BoolToVis}}">
-            <StackPanel HorizontalAlignment="Left" MaxWidth="640">
-                <TextBlock Text="Settings" FontSize="22" FontWeight="Bold" Margin="2,0,0,14"/>
-
-                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,0,0,14">
-                    <StackPanel>
-                        <TextBlock Text="Profile &amp; history" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock Text="Export your whole setup to a file to back it up or share it with a friend, or import one. Presets you save land in your presets folder and load automatically next time. Undo/redo step through recent changes (Ctrl+Z / Ctrl+Y)."
-                                   FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Export profile…" Command="{Binding SavePresetCommand}" Margin="0,0,8,0"/>
-                            <Button Content="Import profile…" Command="{Binding LoadPresetCommand}" Margin="0,0,8,0"/>
-                            <Button Content="Presets folder" Command="{Binding OpenPresetsFolderCommand}" Margin="0,0,8,0"/>
-                            <Button Content="↶ Undo" Command="{Binding UndoCommand}" Margin="0,0,8,0"/>
-                            <Button Content="↷ Redo" Command="{Binding RedoCommand}"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,0,0,14">
-                    <StackPanel>
-                        <TextBlock Text="Reliability &amp; diagnostics" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
-
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Follow the Windows default mic"/>
-                                <TextBlock Text="Automatically switch and restart when you change your default microphone in Windows."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
-                                      IsChecked="{Binding FollowDefaultInput}"/>
-                        </Grid>
-
-                        <Grid Margin="0,16,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Session health" FontWeight="SemiBold" FontSize="12"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBlock Text="DSP load " FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                    <TextBlock Text="{Binding DspLoadText}" FontSize="12" FontWeight="SemiBold"/>
-                                    <TextBlock Text="   ·   glitches " FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                    <TextBlock Text="{Binding GlitchText}" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Open logs" Command="{Binding OpenLogsCommand}"
-                                    VerticalAlignment="Center"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}" Padding="18,16">
-                    <StackPanel>
-                        <TextBlock Text="Startup &amp; tray" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
-
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Start with Windows"/>
-                                <TextBlock Text="Launch MicForge when you sign in (starts hidden in the tray)."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
-                                      IsChecked="{Binding StartWithWindows}"/>
-                        </Grid>
-
-                        <Grid Margin="0,14,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Auto-start processing"/>
-                                <TextBlock Text="Begin processing automatically as soon as the app opens."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
-                                      IsChecked="{Binding AutoStartProcessing}"/>
-                        </Grid>
-
-                        <Grid Margin="0,14,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Close to tray"/>
-                                <TextBlock Text="Closing or minimizing keeps MicForge running in the system tray."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
-                                      IsChecked="{Binding MinimizeToTray}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Monitoring" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock Text="Also send the processed audio to a second device so you can hear yourself while it feeds the virtual mic. Use headphones to avoid feedback."
-                                   FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Monitor device" FontSize="12" Margin="0,0,0,5"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
-                                <ComboBox Width="320" HorizontalAlignment="Left"
-                                          ItemsSource="{Binding Outputs}" SelectedItem="{Binding SelectedMonitorDevice}"
-                                          DisplayMemberPath="Name"/>
-                            </StackPanel>
-                            <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Bottom"
-                                      Margin="0,0,0,7" IsChecked="{Binding MonitorEnabled}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Updates" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}"/>
-                            <Button Content="Download &amp; install" Command="{Binding InstallUpdateCommand}" Margin="10,0,0,0"
-                                    Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Card}" Padding="18,16" Margin="0,12,0,0">
-                    <StackPanel>
-                        <TextBlock Text="About" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}" FontSize="12"
-                                   Text="A real-time microphone processor. Route the output to a virtual audio cable and select it as your mic in any app."/>
-                        <TextBlock Text="{Binding VersionText}" FontSize="11" Margin="0,10,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Text="More settings coming soon." FontSize="11" Margin="4,12,0,0"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-            </StackPanel>
-        </ScrollViewer>
+        <views:SettingsView Grid.Column="1"
+                            Visibility="{Binding IsSettingsPage, Converter={StaticResource BoolToVis}}" />
 
         <!-- ================= SHORTCUTS PAGE ================= -->
         <ScrollViewer Grid.Column="1" Margin="14" VerticalScrollBarVisibility="Auto"
@@ -868,7 +715,7 @@
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Global hotkeys"/>
                                 <TextBlock Text="When on, the shortcuts below work system-wide — even while another app is focused."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
                                       IsChecked="{Binding GlobalHotkeysEnabled}"/>
@@ -885,11 +732,11 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center"/>
-                                        <Border Grid.Column="1" Background="{StaticResource SurfaceAltBrush}"
-                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        <Border Grid.Column="1" Background="{DynamicResource SurfaceAltBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                                 CornerRadius="6" Padding="10,6" Margin="0,0,8,0" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Display}" HorizontalAlignment="Center"
-                                                       Foreground="{StaticResource TextMutedBrush}"/>
+                                                       Foreground="{DynamicResource TextMutedBrush}"/>
                                         </Border>
                                         <Button Grid.Column="2" Content="{Binding SetText}" MinWidth="98" Margin="0,0,8,0"
                                                 Command="{Binding DataContext.SetHotkeyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -904,7 +751,7 @@
 
                         <TextBlock Text="Click Set, then press your combo (Esc cancels). A modifier (Ctrl/Alt/Shift/Win) is required, or use an F-key."
                                    FontSize="11" TextWrapping="Wrap" Margin="0,16,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}"/>
+                                   Foreground="{DynamicResource TextMutedBrush}"/>
 
                         <Grid Margin="0,18,0,0">
                             <Grid.ColumnDefinitions>
@@ -914,7 +761,7 @@
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Mute overlay"/>
                                 <TextBlock Text="Flash an on-screen indicator when you mute/unmute while MicForge isn't focused."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
                                       IsChecked="{Binding ShowMuteOverlay}"/>
@@ -932,7 +779,7 @@
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Push-to-talk / push-to-mute"/>
                                 <TextBlock Text="Hold a key to talk (muted otherwise) or to mute. Works system-wide; pick a spare key such as an F-key."
-                                           FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                                           FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                             <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
                                       IsChecked="{Binding PttEnabled}"/>
@@ -945,9 +792,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Mode" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <TextBlock Text="Hold to mute" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Hold to mute" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}"/>
                                 <CheckBox Style="{StaticResource ToggleSwitch}" Margin="8,0" IsChecked="{Binding PttHoldToTalk}"/>
-                                <TextBlock Text="Hold to talk" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Text="Hold to talk" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
                         </Grid>
 
@@ -958,11 +805,11 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Key" VerticalAlignment="Center"/>
-                            <Border Grid.Column="1" Background="{StaticResource SurfaceAltBrush}"
-                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6"
+                            <Border Grid.Column="1" Background="{DynamicResource SurfaceAltBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6"
                                     Padding="10,6" Margin="12,0,8,0" HorizontalAlignment="Left" MinWidth="120">
                                 <TextBlock Text="{Binding PttKeyDisplay}" HorizontalAlignment="Center"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                           Foreground="{DynamicResource TextMutedBrush}"/>
                             </Border>
                             <Button Grid.Column="2" Content="{Binding SetPttText}" MinWidth="110"
                                     Command="{Binding SetPttKeyCommand}"/>

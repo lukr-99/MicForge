@@ -1,76 +1,54 @@
+using System.ComponentModel;
+using DotNetLib.Tray;
 using MicForge.ViewModels;
-using WinForms = System.Windows.Forms;
 
 namespace MicForge;
 
-/// <summary>Tray icon + context menu, and keeping the icon/tooltip in sync with run/mute state.</summary>
+/// <summary>Adapts processing commands and state to the shared tray host.</summary>
 public partial class MainWindow
 {
-    private WinForms.NotifyIcon _tray;
-    private WinForms.ToolStripMenuItem _startupItem;
-    private WinForms.ToolStripMenuItem _muteItem, _bypassItem;
-    private IconFactory.TrayState? _trayState;
+    private TrayIconHost _tray;
 
     private void SetupTray()
     {
-        _tray = new WinForms.NotifyIcon
-        {
-            Icon = IconFactory.CreateIcon(),
-            Text = "MicForge",
-            Visible = true
-        };
-        _tray.DoubleClick += (_, _) => ShowFromTray();
-
-        var menu = new WinForms.ContextMenuStrip();
-        menu.Items.Add("Open MicForge", null, (_, _) => ShowFromTray());
-        menu.Items.Add("Start / Stop", null, (_, _) => _vm.StartStopCommand.Execute(null));
-
-        _muteItem = new WinForms.ToolStripMenuItem("Mute", null, (_, _) => _vm.ToggleMuteCommand.Execute(null));
-        _bypassItem = new WinForms.ToolStripMenuItem("Bypass", null, (_, _) => _vm.ToggleBypassCommand.Execute(null));
-        menu.Items.Add(_muteItem);
-        menu.Items.Add(_bypassItem);
-        menu.Opening += (_, _) => { _muteItem.Checked = _vm.Muted; _bypassItem.Checked = _vm.Bypassed; };
-
-        menu.Items.Add(new WinForms.ToolStripSeparator());
-
-        _startupItem = new WinForms.ToolStripMenuItem("Start with Windows")
-        {
-            Checked = _vm.StartWithWindows,
-            CheckOnClick = true
-        };
-        _startupItem.Click += (_, _) => _vm.StartWithWindows = _startupItem.Checked;
-        menu.Items.Add(_startupItem);
-
-        menu.Items.Add(new WinForms.ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => ExitApp());
-
-        _tray.ContextMenuStrip = menu;
+        _tray = new TrayIconHost("MicForge", leftClick: ShowFromTray);
+        UpdateTrayIcon();
     }
 
-    private void OnVmPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnVmPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(MainViewModel.Muted) or nameof(MainViewModel.IsProcessing)
-            or nameof(MainViewModel.IsRunning) or nameof(MainViewModel.IsReconnecting))
+        if (e.PropertyName is nameof(MainViewModel.Muted) or nameof(MainViewModel.Bypassed)
+            or nameof(MainViewModel.IsProcessing) or nameof(MainViewModel.IsRunning)
+            or nameof(MainViewModel.IsReconnecting) or nameof(MainViewModel.StartWithWindows)
+            or nameof(MainViewModel.ThemeMode))
             UpdateTrayIcon();
     }
 
     private void UpdateTrayIcon()
     {
         if (_tray == null) return;
-        var st = _vm.Muted ? IconFactory.TrayState.Muted
-               : _vm.IsProcessing ? IconFactory.TrayState.Live
-               : IconFactory.TrayState.Stopped;
-        if (st == _trayState) return;
-        _trayState = st;
-
-        var old = _tray.Icon;
-        try { _tray.Icon = IconFactory.CreateIcon(st); } catch { }
-        old?.Dispose();
-        _tray.Text = st switch
+        var state = new TrayStatus(_vm.Muted, _vm.IsProcessing, _vm.IsReconnecting);
+        _tray.SetIcon(IconFactory.CreateTrayIcon(_vm.Muted ? IconFactory.TrayState.Muted
+            : _vm.IsProcessing ? IconFactory.TrayState.Live : IconFactory.TrayState.Stopped));
+        _tray.SetToolTip(state.ToolTip);
+        var menu = new TrayMenuBuilder();
+        menu.Label(state.ToolTip);
+        menu.Separator();
+        menu.Item("Open MicForge", ShowFromTray, isDefault: true);
+        menu.Item("Settings", () => { _vm.ShowSettingsCommand.Execute(null); ShowFromTray(); });
+        menu.Item(_vm.IsRunning ? "Stop processing" : "Start processing", () => _vm.StartStopCommand.Execute(null));
+        menu.Item("Mute", () => _vm.ToggleMuteCommand.Execute(null), isChecked: _vm.Muted);
+        menu.Item("Bypass", () => _vm.ToggleBypassCommand.Execute(null), isChecked: _vm.Bypassed);
+        menu.Separator();
+        menu.Item("Start with Windows", () => _vm.StartWithWindows = !_vm.StartWithWindows,
+            isChecked: _vm.StartWithWindows);
+        menu.Submenu("Theme", themes =>
         {
-            IconFactory.TrayState.Muted => "MicForge — muted",
-            IconFactory.TrayState.Live => "MicForge — live",
-            _ => "MicForge"
-        };
+            foreach (var option in _vm.ThemeOptions)
+                themes.Item(option, () => _vm.ThemeMode = option, isChecked: _vm.ThemeMode == option);
+        });
+        menu.Separator();
+        menu.Item("Quit MicForge", ExitApp);
+        _tray.SetMenu(menu.Build());
     }
 }

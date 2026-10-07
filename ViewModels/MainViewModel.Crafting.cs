@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
             System.Diagnostics.Process.Start(
                 new System.Diagnostics.ProcessStartInfo(CraftCatalog.FilePath) { UseShellExecute = true });
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+        catch (Exception ex) { ShowMessage(ex.Message, "MicForge"); }
     }
 
     /// <summary>
@@ -230,7 +230,7 @@ public sealed partial class MainViewModel
             Log.Error("Sample preview failed to start", ex);
             _previewActive = false;
             OnPropertyChanged(nameof(PreviewSampleActive));
-            MessageBox.Show("Could not start the preview on your output device.", "MicForge");
+            ShowMessage("Could not start the preview on your output device.", "MicForge");
         }
     }
 
@@ -255,6 +255,6 @@ public sealed partial class MainViewModel
                 !s.IsSynth && string.Equals(s.Path, dest, StringComparison.OrdinalIgnoreCase));
             if (added != null) SelectedPreviewSample = added;
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "MicForge"); }
+        catch (Exception ex) { ShowMessage(ex.Message, "MicForge"); }
     }
 }

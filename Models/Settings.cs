@@ -125,6 +125,7 @@ public sealed partial class Settings
     public double EchoStrength { get; set; } = 60;
 
     // App-level (not part of the DSP chain).
+    public string Theme { get; set; } = "Dark";
     public bool AutoStartProcessing { get; set; }
     public bool StartMinimized { get; set; } = true;
     public bool VisualMode { get; set; }
