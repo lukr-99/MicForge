@@ -39,8 +39,10 @@ if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
   throw "The .NET SDK ('dotnet') was not found on PATH."
 }
 
-$publish = Join-Path $here 'publish'
-if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
+$publish = [IO.Path]::GetFullPath((Join-Path $here 'publish'))
+$expectedPublish = [IO.Path]::GetFullPath((Join-Path $repo 'installer/publish'))
+if ($publish -ne $expectedPublish) { throw "Unexpected publish directory: $publish" }
+if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
 Step "Publishing ($Configuration, $Runtime, self-contained) ..."
 & dotnet publish $proj -c $Configuration -r $Runtime --self-contained true `
     -p:PublishSingleFile=false -o $publish | Out-Null

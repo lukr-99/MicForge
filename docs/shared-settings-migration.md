@@ -17,5 +17,6 @@ tray status precedence and a real WPF settings window. The window check covers n
 two-way toggle binding, light and dark resource changes, a busy and a disabled row, and narrow
 chip navigation. Local rendered previews go in the ignored artifacts folder.
 
-The installed app and live audio devices were not exercised. Review and merge are still pending,
-so the board items remain in Doing. Publishing a release and installing it are separate steps.
+The migration was reviewed against the tray/settings tasks before the 1.9.0 local update. The
+isolated WPF test uses preview data; installed-app startup and live audio need their own smoke
+check when deploying. Publishing a GitHub release is separate from a local install.

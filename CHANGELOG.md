@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.9.0
 
 - Move the tray icon, status menu and notifications to DotNetLib.Tray 0.4.1.
 - Replace the Settings tab with the shared scrolling page, section navigation and row controls.

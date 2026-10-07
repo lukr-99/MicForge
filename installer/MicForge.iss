@@ -3,7 +3,9 @@
 ; adds a Start-menu shortcut, and registers an uninstaller in "Installed apps".
 
 #define MyAppName "MicForge"
-#define MyAppVersion "1.8.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.9.0"
+#endif
 #define MyAppPublisher "lukr-99"
 #define MyAppExeName "MicForge.exe"
 #define MyAppURL "https://github.com/lukr-99/MicForge"
@@ -26,6 +28,8 @@ DefaultDirName={autopf}\MicForge
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 PrivilegesRequired=lowest
+CloseApplications=yes
+RestartApplications=no
 ArchitecturesAllowed=x64compatible
 OutputDir=.
 OutputBaseFilename=MicForge-Setup-{#MyAppVersion}
@@ -35,7 +39,7 @@ UninstallDisplayName={#MyAppName}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-VersionInfoVersion=1.8.0.0
+VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
 LicenseFile=..\LICENSE.md
