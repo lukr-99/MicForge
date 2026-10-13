@@ -44,10 +44,12 @@ public partial class SettingsView : UserControl
     private void Toggle_Changed(object sender, bool value) => ShowSaveFeedback((SettingsRow)sender);
     private void Choice_Changed(object sender, object value) => ShowSaveFeedback((SettingsRow)sender);
 
+    // The bound setter has already written the change by the time the row raises its event
+    // (the row sets its value first), so only report that write's result here.
     private void ShowSaveFeedback(SettingsRow row)
     {
         if (DataContext is not MainViewModel vm) return;
-        if (vm.TrySaveSettings())
+        if (vm.LastWriteSucceeded)
         {
             row.ClearResult();
             row.ShowSaved();
