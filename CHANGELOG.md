@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 1.10.0
+
 - Run the capture and processing threads at Windows "Pro Audio" priority, so audio keeps up under
   CPU load. Buffer latency is unchanged.
 - Rebuild the tray icon and menu only when what they show changes.
