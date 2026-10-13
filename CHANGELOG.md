@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+- Run the capture and processing threads at Windows "Pro Audio" priority, so audio keeps up under
+  CPU load. Buffer latency is unchanged.
+- Rebuild the tray icon and menu only when what they show changes.
+- Write each settings change once. "Saved" now shows the result of that write, and Start with
+  Windows reports when its registry entry could not be changed.
+- Show a message with the link when the release notes cannot be opened in the browser.
+- Show at most one error dialog when errors repeat, instead of stacking them.
+- Update Microsoft.Extensions.DependencyInjection to 10.0.12.
+
 ## 1.9.0
 
 - Move the tray icon, status menu and notifications to DotNetLib.Tray 0.4.1.
