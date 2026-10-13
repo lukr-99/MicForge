@@ -109,11 +109,13 @@ public sealed class DspChain
 
     public void Process(float[] buffer, int offset, int count)
     {
-        // Snapshot the raw input for the spectrum analyzer.
+        // Snapshot the raw input for the spectrum analyzer. Non-finite samples become silence
+        // first, so a driver glitch cannot get stuck in any stage's filter or envelope state.
         lock (_specLock)
         {
             for (int i = offset; i < offset + count; i++)
             {
+                if (!float.IsFinite(buffer[i])) buffer[i] = 0;
                 _spec[_specPos] = buffer[i];
                 if (++_specPos == SpectrumSamples) _specPos = 0;
             }
