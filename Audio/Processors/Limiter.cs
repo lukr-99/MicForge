@@ -45,6 +45,9 @@ public sealed class Limiter : AudioProcessorBase
         for (int i = offset; i < offset + count; i++)
         {
             double x = buffer[i];
+            // A NaN would stick in the peak follower (its comparisons are always false) and
+            // blind the limiter for good, so treat any non-finite sample as silence.
+            if (!double.IsFinite(x)) x = 0;
             float delayed = _delay[_pos];
             _delay[_pos] = (float)x;
             _pos = (_pos + 1) % _len;
