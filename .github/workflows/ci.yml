@@ -13,6 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  APP_PROJECT: MicForge.csproj
   TEST_PROJECT: tests/MicForge.Tests/MicForge.Tests.csproj
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -45,6 +46,14 @@ jobs:
           # is a classic PAT with read:packages, the same one Startup Profiles uses (see nuget.config).
           # Only this step gets it.
           NuGetPackageSourceCredentials_dotnetlib: Username=lukr-99;Password=${{ secrets.DOTNETLIB_PACKAGES_TOKEN }}
+
+      # dotnet format checks one project at a time (it skips referenced projects), so check both.
+      # To fix a failure locally, run the same command without --verify-no-changes.
+      - name: Check formatting (app)
+        run: dotnet format $env:APP_PROJECT --verify-no-changes --no-restore
+
+      - name: Check formatting (tests)
+        run: dotnet format $env:TEST_PROJECT --verify-no-changes --no-restore
 
       - name: Build
         run: dotnet build $env:TEST_PROJECT -c Release --no-restore -warnaserror

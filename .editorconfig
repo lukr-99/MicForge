@@ -1,0 +1,24 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+# No end_of_line here: there is no .gitattributes, so files keep the line endings Git checks out
+# (CRLF on Windows with core.autocrlf), locally and on the windows-latest CI runner.
+
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.{cs,xaml}]
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets}]
+indent_style = space
+indent_size = 2

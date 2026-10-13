@@ -49,27 +49,27 @@ public sealed class Biquad
                 a0 = 1 + alpha / a; a1 = -2 * cos; a2 = 1 - alpha / a;
                 break;
             case FilterType.LowShelf:
-            {
-                double sq = 2 * Math.Sqrt(a) * alpha;
-                b0 = a * ((a + 1) - (a - 1) * cos + sq);
-                b1 = 2 * a * ((a - 1) - (a + 1) * cos);
-                b2 = a * ((a + 1) - (a - 1) * cos - sq);
-                a0 = (a + 1) + (a - 1) * cos + sq;
-                a1 = -2 * ((a - 1) + (a + 1) * cos);
-                a2 = (a + 1) + (a - 1) * cos - sq;
-                break;
-            }
+                {
+                    double sq = 2 * Math.Sqrt(a) * alpha;
+                    b0 = a * ((a + 1) - (a - 1) * cos + sq);
+                    b1 = 2 * a * ((a - 1) - (a + 1) * cos);
+                    b2 = a * ((a + 1) - (a - 1) * cos - sq);
+                    a0 = (a + 1) + (a - 1) * cos + sq;
+                    a1 = -2 * ((a - 1) + (a + 1) * cos);
+                    a2 = (a + 1) + (a - 1) * cos - sq;
+                    break;
+                }
             case FilterType.HighShelf:
-            {
-                double sq = 2 * Math.Sqrt(a) * alpha;
-                b0 = a * ((a + 1) + (a - 1) * cos + sq);
-                b1 = -2 * a * ((a - 1) + (a + 1) * cos);
-                b2 = a * ((a + 1) + (a - 1) * cos - sq);
-                a0 = (a + 1) - (a - 1) * cos + sq;
-                a1 = 2 * ((a - 1) - (a + 1) * cos);
-                a2 = (a + 1) - (a - 1) * cos - sq;
-                break;
-            }
+                {
+                    double sq = 2 * Math.Sqrt(a) * alpha;
+                    b0 = a * ((a + 1) + (a - 1) * cos + sq);
+                    b1 = -2 * a * ((a - 1) + (a + 1) * cos);
+                    b2 = a * ((a + 1) + (a - 1) * cos - sq);
+                    a0 = (a + 1) - (a - 1) * cos + sq;
+                    a1 = 2 * ((a - 1) - (a + 1) * cos);
+                    a2 = (a + 1) - (a - 1) * cos - sq;
+                    break;
+                }
             default:
                 b0 = 1; b1 = 0; b2 = 0; a0 = 1; a1 = 0; a2 = 0;
                 break;

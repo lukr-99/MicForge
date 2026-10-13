@@ -106,6 +106,10 @@ dotnet run   -c Release
 # compatibility, tray state and WPF settings tests
 dotnet test tests/MicForge.Tests/MicForge.Tests.csproj -c Release
 
+# formatting (CI runs these with --verify-no-changes)
+dotnet format MicForge.csproj
+dotnet format tests/MicForge.Tests/MicForge.Tests.csproj
+
 # self-contained publish (what the installer bundles)
 dotnet publish -c Release -r win-x64 --self-contained true
 

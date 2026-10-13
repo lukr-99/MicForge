@@ -1,0 +1,4 @@
+# Mechanical reformats. Use with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: apply dotnet format
+6a9259cbcd07b285fc89b21acab8d8c8a0808004
