@@ -160,10 +160,12 @@ public sealed partial class MainViewModel
         _hiEnv = db > _hiEnv ? db : _hiEnv - 0.5;   // speech-peak proxy (decays ~15 dB/s)
         _loEnv = db < _loEnv ? db : _loEnv + 0.2;   // noise-floor proxy (rises slowly)
 
+#pragma warning disable format // keep the aligned table
         if (InClip)                 SetHealth("Too hot", "#E5543B", "Peaks are clipping — lower the input gain or back off the mic.");
         else if (_hiEnv < -40)      SetHealth("Quiet", "#E3B23C", "Your voice is low — raise the input gain, or run Auto-calibrate.");
         else if (_loEnv > -45)      SetHealth("Noisy", "#E3B23C", "High background noise — try the gate, or enable noise suppression.");
         else                        SetHealth("Good", "#7FB069", "Levels look healthy.");
+#pragma warning restore format
     }
 
     private void SetHealth(string text, string color, string tip)

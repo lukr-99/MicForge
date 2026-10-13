@@ -105,6 +105,7 @@ public static class CraftCatalog
 
     private static readonly Dictionary<string, string> Cat = new()
     {
+#pragma warning disable format // keep the aligned table
         ["bass"] = "Tone", ["thin"] = "Tone", ["warm"] = "Tone", ["bright"] = "Tone",
         ["pres"] = "Tone", ["air"] = "Tone", ["pod"] = "Tone", ["boomy"] = "Tone", ["edgy"] = "Tone",
         ["announcer"] = "Polish", ["narrator"] = "Polish", ["asmr"] = "Polish", ["crisp"] = "Polish",
@@ -114,6 +115,7 @@ public static class CraftCatalog
         ["goblin"] = "Fun", ["alien"] = "Fun", ["monster"] = "Fun", ["helium"] = "Fun",
         ["radio"] = "FX", ["phone"] = "FX", ["mega"] = "FX", ["water"] = "FX",
         ["vintage"] = "FX", ["nasal"] = "FX", ["cave"] = "FX", ["intercom"] = "FX",
+#pragma warning restore format
     };
 
     public static string CategoryFor(string id) =>

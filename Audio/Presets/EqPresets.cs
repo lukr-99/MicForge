@@ -24,6 +24,7 @@ public static class EqPresets
 
         switch (name)
         {
+#pragma warning disable format // keep the aligned table
             case "Bass Boost":   Gains(eq, 6, 2, 0, 0, 0); break;
             case "Bass Cut":     Gains(eq, -6, -1, 0, 0, 0); break;
             case "Warm":         Gains(eq, 3, 1, 0, -2, -1); break;
@@ -35,6 +36,7 @@ public static class EqPresets
             case "Loudness":     Gains(eq, 5, 0, -2, 0, 5); break;
             case "Air":          Gains(eq, 0, 0, 0, 0, 5); break;
             case "Podcast":      Gains(eq, 3, 1, 0, 1, 1); break;
+#pragma warning restore format
             // "Flat" leaves the bands at 0.
         }
         eq.UpdateAll();
