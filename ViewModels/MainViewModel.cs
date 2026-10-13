@@ -162,8 +162,20 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenReleaseNotes() => System.Diagnostics.Process.Start(
-        new System.Diagnostics.ProcessStartInfo("https://github.com/lukr-99/MicForge/releases") { UseShellExecute = true });
+    private void OpenReleaseNotes()
+    {
+        const string url = "https://github.com/lukr-99/MicForge/releases";
+        try
+        {
+            using var _ = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not open the release notes", ex);
+            ShowMessage($"Couldn't open the browser.\n\nThe release notes are at:\n{url}", "Release notes");
+        }
+    }
 
     // ---- options ----
     private bool _startWithWindows;
