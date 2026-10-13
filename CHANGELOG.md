@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 1.10.1
+
 - Fix following the Windows default mic. The restart failed with "The selected audio device
   is no longer available" because reloading the device lists cleared the selected output.
 - Follow a new default mic also while the engine is reconnecting, instead of reconnecting to

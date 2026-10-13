@@ -4,7 +4,7 @@
 
 #define MyAppName "MicForge"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.10.0"
+  #define MyAppVersion "1.10.1"
 #endif
 #define MyAppPublisher "lukr-99"
 #define MyAppExeName "MicForge.exe"
