@@ -162,15 +162,27 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenReleaseNotes() => System.Diagnostics.Process.Start(
-        new System.Diagnostics.ProcessStartInfo("https://github.com/lukr-99/MicForge/releases") { UseShellExecute = true });
+    private void OpenReleaseNotes()
+    {
+        const string url = "https://github.com/lukr-99/MicForge/releases";
+        try
+        {
+            using var _ = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not open the release notes", ex);
+            ShowMessage($"Couldn't open the browser.\n\nThe release notes are at:\n{url}", "Release notes");
+        }
+    }
 
     // ---- options ----
     private bool _startWithWindows;
     public bool StartWithWindows
     {
         get => _startWithWindows;
-        set { if (Set(ref _startWithWindows, value)) StartupManager.SetEnabled(value); }
+        set { if (Set(ref _startWithWindows, value)) LastWriteSucceeded = StartupManager.SetEnabled(value); }
     }
 
     private bool _autoStartProcessing;
@@ -504,20 +516,28 @@ public sealed partial class MainViewModel : ViewModelBase
 
     public bool TrySaveSettings()
     {
-        if (!_settingsReady) return false;
+        if (!_settingsReady) return LastWriteSucceeded = false;
         try
         {
             Snapshot().Save(_settingsPath);
             SettingsSaveFailed = false;
+            LastWriteSucceeded = true;
             return true;
         }
         catch (Exception ex)
         {
             Log.Error("Could not save settings", ex);
             SettingsSaveFailed = true;
+            LastWriteSucceeded = false;
             return false;
         }
     }
+
+    /// <summary>
+    /// Result of the most recent settings write (the settings file, or the startup entry for
+    /// Start with Windows). The settings page reads it to show "Saved" without writing again.
+    /// </summary>
+    public bool LastWriteSucceeded { get; private set; }
 
     private bool _settingsSaveFailed;
     public bool SettingsSaveFailed

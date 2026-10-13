@@ -8,6 +8,12 @@ namespace MicForge;
 public partial class MainWindow
 {
     private TrayIconHost _tray;
+    private TrayMenuState _trayState;
+
+    /// <summary>Everything the tray icon, tooltip and menu show. Rebuild only when it changes.</summary>
+    private sealed record TrayMenuState(
+        bool Muted, bool Bypassed, bool Processing, bool Running, bool Reconnecting,
+        bool StartWithWindows, string ThemeMode);
 
     private void SetupTray()
     {
@@ -24,9 +30,14 @@ public partial class MainWindow
             UpdateTrayIcon();
     }
 
-    private void UpdateTrayIcon()
+    /// <param name="force">Rebuild even when the state is the same, for example after a theme switch.</param>
+    private void UpdateTrayIcon(bool force = false)
     {
         if (_tray == null) return;
+        var key = new TrayMenuState(_vm.Muted, _vm.Bypassed, _vm.IsProcessing, _vm.IsRunning,
+            _vm.IsReconnecting, _vm.StartWithWindows, _vm.ThemeMode);
+        if (!force && key == _trayState) return;
+        _trayState = key;
         var state = new TrayStatus(_vm.Muted, _vm.IsProcessing, _vm.IsReconnecting);
         _tray.SetIcon(IconFactory.CreateTrayIcon(_vm.Muted ? IconFactory.TrayState.Muted
             : _vm.IsProcessing ? IconFactory.TrayState.Live : IconFactory.TrayState.Stopped));

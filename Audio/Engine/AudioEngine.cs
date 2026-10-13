@@ -114,6 +114,7 @@ public sealed class AudioEngine : IDisposable
         };
         _capture.DataAvailable += (_, a) =>
         {
+            Mmcss.EnsureProAudio("capture");
             if (_buffer.BufferedBytes + a.BytesRecorded > _buffer.BufferLength) Glitches++;
             _buffer.AddSamples(a.Buffer, 0, a.BytesRecorded);
             _lastDataTicks = Environment.TickCount64;
@@ -145,7 +146,8 @@ public sealed class AudioEngine : IDisposable
 
         _output = new WasapiOut(output, AudioClientShareMode.Shared, true, 50);
         _output.PlaybackStopped += OnStopped;
-        _output.Init(outProv);
+        // The render thread pulls the whole DSP chain, so it needs MMCSS the most.
+        _output.Init(new MmcssSampleProvider(outProv));
 
         _lastDataTicks = Environment.TickCount64;
         _capture.StartRecording();

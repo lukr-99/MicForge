@@ -41,7 +41,6 @@ public partial class MainWindow : Window
         _osd = new OsdWindow();
 
         SetupTray();
-        UpdateTrayIcon();
         try { Icon = IconFactory.CreateImageSource(); } catch { }
 
         Loaded += OnLoaded;
@@ -161,7 +160,7 @@ public partial class MainWindow : Window
             int dark = _theme.IsDark ? 1 : 0;
             DwmSetWindowAttribute(handle, 20, ref dark, sizeof(int));
         }
-        UpdateTrayIcon();
+        UpdateTrayIcon(force: true);
     }
 
     internal void ShowFromTray()

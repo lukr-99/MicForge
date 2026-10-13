@@ -32,7 +32,8 @@ public static class StartupManager
         }
     }
 
-    public static void SetEnabled(bool enabled)
+    /// <summary>Adds or removes the Run entry. Returns false when the registry write failed.</summary>
+    public static bool SetEnabled(bool enabled)
     {
         try
         {
@@ -41,14 +42,19 @@ public static class StartupManager
             if (enabled)
             {
                 var exe = ExePath;
-                if (!string.IsNullOrEmpty(exe))
-                    key.SetValue(ValueName, $"\"{exe}\" --tray");
+                if (string.IsNullOrEmpty(exe)) return false;
+                key.SetValue(ValueName, $"\"{exe}\" --tray");
             }
             else
             {
                 key.DeleteValue(ValueName, throwOnMissingValue: false);
             }
+            return true;
         }
-        catch { /* non-fatal */ }
+        catch (Exception ex)
+        {
+            Log.Error("Could not update the Windows startup entry", ex);
+            return false;
+        }
     }
 }

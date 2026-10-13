@@ -67,12 +67,30 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    private bool _showingError;
+
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log.Error("Unhandled UI exception", e.Exception);
-        TrayMessageWindow.Inform("MicForge",
-            "MicForge hit an unexpected error and logged the details.\n\n" + e.Exception.Message,
-            prepare: window => _services?.GetService<AppTheme>()?.Attach(window));
         e.Handled = true;   // keep the app alive; the error is logged
+
+        // The dialog runs a nested message loop (ShowDialog). A timer that keeps throwing, or
+        // the dialog itself throwing, would land here again and stack dialogs without end.
+        if (_showingError) return;
+        _showingError = true;
+        try
+        {
+            TrayMessageWindow.Inform("MicForge",
+                "MicForge hit an unexpected error and logged the details.\n\n" + e.Exception.Message,
+                prepare: window => _services?.GetService<AppTheme>()?.Attach(window));
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not show the error dialog", ex);
+        }
+        finally
+        {
+            _showingError = false;
+        }
     }
 }
