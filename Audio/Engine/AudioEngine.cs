@@ -20,13 +20,17 @@ public sealed class AudioEngine : IDisposable
 {
     public const int SampleRate = 48000;
 
-    private WasapiCapture _capture;
-    private WasapiOut _output;
+    // Windows' MMCSS task for low-latency audio. NAudio registers its capture and render
+    // threads with it, so the DSP keeps up under CPU load.
+    private const string MmcssTask = "Pro Audio";
+
+    private WasapiRecorder _capture;
+    private WasapiPlayer _output;
     private BufferedWaveProvider _buffer;
 
     private TeeSampleProvider _tee;
     private BufferedWaveProvider _monBuffer;
-    private WasapiOut _monitor;
+    private WasapiPlayer _monitor;
     private string _monId, _monName;
     private bool _monEnabled;
 
@@ -101,22 +105,26 @@ public sealed class AudioEngine : IDisposable
 
     private void StartCore(MMDevice input, MMDevice output)
     {
-        _capture = new WasapiCapture(input, true, 30);
+        _capture = new WasapiRecorderBuilder()
+            .WithDevice(input)
+            .WithSharedMode()
+            .WithEventSync()
+            .WithBufferLength(30)
+            .WithMmcssThreadPriority(MmcssTask)
+            .Build();
         var capFmt = _capture.WaveFormat;
         if (capFmt.Channels > 2)
             throw new NotSupportedException(
                 $"Input device has {capFmt.Channels} channels; please pick a mono or stereo mic.");
 
-        _buffer = new BufferedWaveProvider(capFmt)
+        _buffer = new BufferedWaveProvider(capFmt, TimeSpan.FromMilliseconds(500))
         {
-            DiscardOnBufferOverflow = true,
-            BufferDuration = TimeSpan.FromMilliseconds(500)
+            DiscardOnBufferOverflow = true
         };
-        _capture.DataAvailable += (_, a) =>
+        _capture.DataAvailable += (data, _, _, _) =>
         {
-            Mmcss.EnsureProAudio("capture");
-            if (_buffer.BufferedBytes + a.BytesRecorded > _buffer.BufferLength) Glitches++;
-            _buffer.AddSamples(a.Buffer, 0, a.BytesRecorded);
+            if (_buffer.BufferedBytes + data.Length > _buffer.BufferLength) Glitches++;
+            _buffer.AddSamples(data);
             _lastDataTicks = Environment.TickCount64;
         };
         _capture.RecordingStopped += OnStopped;
@@ -130,24 +138,23 @@ public sealed class AudioEngine : IDisposable
 
         var dsp = new DspSampleProvider(sp, Chain);
 
-        _monBuffer = new BufferedWaveProvider(WaveFormat.CreateIeeeFloatWaveFormat(SampleRate, 1))
+        _monBuffer = new BufferedWaveProvider(WaveFormat.CreateIeeeFloatWaveFormat(SampleRate, 1), TimeSpan.FromSeconds(1))
         {
-            DiscardOnBufferOverflow = true,
-            BufferDuration = TimeSpan.FromSeconds(1)
+            DiscardOnBufferOverflow = true
         };
         _tee = new TeeSampleProvider(dsp, _monBuffer);
 
-        var mix = output.AudioClient.MixFormat;
+        // The render thread pulls the whole DSP chain, so it needs MMCSS the most.
+        _output = BuildPlayer(output, 50);
+        var mix = _output.DeviceMixFormat;
         ISampleProvider outProv = _tee;
         if (mix.SampleRate != SampleRate)
             outProv = new WdlResamplingSampleProvider(outProv, mix.SampleRate);
         if (mix.Channels >= 2)
             outProv = new MonoToStereoSampleProvider(outProv);
 
-        _output = new WasapiOut(output, AudioClientShareMode.Shared, true, 50);
         _output.PlaybackStopped += OnStopped;
-        // The render thread pulls the whole DSP chain, so it needs MMCSS the most.
-        _output.Init(new MmcssSampleProvider(outProv));
+        _output.Init(outProv);
 
         _lastDataTicks = Environment.TickCount64;
         _capture.StartRecording();
@@ -271,17 +278,27 @@ public sealed class AudioEngine : IDisposable
     {
         var device = Resolve(Enumerate(DataFlow.Render), _monId, _monName);
         if (device == null) return;
-        var mix = device.AudioClient.MixFormat;
+        _monitor = BuildPlayer(device, 60);
+        var mix = _monitor.DeviceMixFormat;
         ISampleProvider mp = _monBuffer.ToSampleProvider();
         if (mix.SampleRate != SampleRate)
             mp = new WdlResamplingSampleProvider(mp, mix.SampleRate);
         if (mix.Channels >= 2)
             mp = new MonoToStereoSampleProvider(mp);
 
-        _monitor = new WasapiOut(device, AudioClientShareMode.Shared, true, 60);
         _monitor.Init(mp);
         _monitor.Play();
     }
+
+    /// <summary>Shared-mode, event-driven player on the device, with its thread at MMCSS priority.</summary>
+    internal static WasapiPlayer BuildPlayer(MMDevice device, int latencyMs)
+        => new WasapiPlayerBuilder()
+            .WithDevice(device)
+            .WithSharedMode()
+            .WithEventSync()
+            .WithLatency(latencyMs)
+            .WithMmcssThreadPriority(MmcssTask)
+            .Build();
 
     private void StopMonitorOutput()
     {

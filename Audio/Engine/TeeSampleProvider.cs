@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using NAudio.Wave;
 
 namespace MicForge.Audio;
@@ -11,7 +12,6 @@ public sealed class TeeSampleProvider : ISampleProvider
 {
     private readonly ISampleProvider _source;
     private readonly BufferedWaveProvider _tap;
-    private byte[] _bytes = Array.Empty<byte>();
 
     public volatile bool Active;
 
@@ -23,16 +23,11 @@ public sealed class TeeSampleProvider : ISampleProvider
 
     public WaveFormat WaveFormat => _source.WaveFormat;
 
-    public int Read(float[] buffer, int offset, int count)
+    public int Read(Span<float> buffer)
     {
-        int n = _source.Read(buffer, offset, count);
+        int n = _source.Read(buffer);
         if (Active && n > 0)
-        {
-            int bytes = n * 4;
-            if (_bytes.Length < bytes) _bytes = new byte[bytes];
-            Buffer.BlockCopy(buffer, offset * 4, _bytes, 0, bytes);
-            _tap.AddSamples(_bytes, 0, bytes);
-        }
+            _tap.AddSamples(MemoryMarshal.AsBytes(buffer[..n]));
         return n;
     }
 }

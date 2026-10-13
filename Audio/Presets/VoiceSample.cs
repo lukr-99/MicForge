@@ -72,7 +72,7 @@ public static class VoiceSample
         var list = new List<float>(sampleRate * 16);
         var buf = new float[sampleRate];
         int n;
-        while ((n = sp.Read(buf, 0, buf.Length)) > 0)
+        while ((n = sp.Read(buf)) > 0)
         {
             for (int i = 0; i < n; i++) list.Add(buf[i]);
             if (list.Count > sampleRate * 40) break;   // cap at 40 s

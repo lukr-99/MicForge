@@ -10,6 +10,9 @@
 - Show a message with the link when the release notes cannot be opened in the browser.
 - Show at most one error dialog when errors repeat, instead of stacking them.
 - Update Microsoft.Extensions.DependencyInjection to 10.0.12.
+- Update NAudio to 3.1.0. Capture and output now use NAudio's new WASAPI recorder and player,
+  which give their threads "Pro Audio" priority themselves. Latencies are unchanged. The
+  voice preview also runs at that priority now and no longer allocates memory per sample.
 
 ## 1.9.0
 

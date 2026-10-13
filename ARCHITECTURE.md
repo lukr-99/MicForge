@@ -6,7 +6,7 @@ renders the shaped signal to an output device — normally the VB-CABLE virtual 
 app (Discord/OBS/games) hears the processed voice.
 
 - **Stack:** C# / .NET 10 (`net10.0-windows`), WPF (MVVM) for the UI, **DotNetLib.Tray 0.4.1** for the tray, settings, theming and dialogs.
-  **NAudio 2.2.1** handles WASAPI capture/render.
+  **NAudio 3.1.0** handles WASAPI capture/render (`WasapiRecorder` / `WasapiPlayer`).
   All DSP is hand-written — no VST/plugin host.
 - **Internal audio format:** mono, 32-bit float, 48 kHz.
 - **Libraries:** NAudio (audio I/O), **CommunityToolkit.Mvvm** (view-model source generators),
@@ -80,13 +80,15 @@ App.xaml(.cs)              application entry, single-instance guard, crash loggi
 ## Signal flow & threading
 
 ```
-mic ─▶ WasapiCapture ─▶ BufferedWaveProvider ─▶ (stereo→mono, resample→48k)
-      ─▶ DspSampleProvider(DspChain) ─▶ (resample/channel-map) ─▶ WasapiOut ─▶ virtual mic
-                              └─▶ TeeSampleProvider ─▶ WasapiOut ─▶ headphones (monitor)
+mic ─▶ WasapiRecorder ─▶ BufferedWaveProvider ─▶ (stereo→mono, resample→48k)
+      ─▶ DspSampleProvider(DspChain) ─▶ (resample/channel-map) ─▶ WasapiPlayer ─▶ virtual mic
+                              └─▶ TeeSampleProvider ─▶ WasapiPlayer ─▶ headphones (monitor)
 ```
 
 `DspChain.Process(buffer, offset, count)` runs each `IAudioProcessor` in the current order,
-in place, on the **audio render thread**. It also fills lock-guarded ring buffers for the
+in place, on the **audio render thread**. NAudio reads providers through `Span<float>`, so
+`DspSampleProvider` runs the chain on a reused scratch array and the real-time path does not
+allocate. NAudio registers its capture and render threads with MMCSS as "Pro Audio". It also fills lock-guarded ring buffers for the
 spectrum analyzers and updates volatile peak/`DspLoad` fields.
 
 The **UI thread** never touches the audio buffers. It reads the volatile meter fields on a
