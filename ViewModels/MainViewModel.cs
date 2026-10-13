@@ -281,7 +281,8 @@ public sealed partial class MainViewModel : ViewModelBase
             if (dev == null || (SelectedInput != null && SelectedInput.Id == newId)) return;
 
             Log.Info($"Following new default mic: {dev.Name}");
-            bool wasRunning = _engine.Running;
+            // A reconnecting engine would otherwise come back on the old mic.
+            bool wasRunning = _engine.Running || _engine.Reconnecting;
             SelectedInput = dev;
             if (wasRunning)
             {
