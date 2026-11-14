@@ -1,6 +1,7 @@
 <UserControl x:Class="MicForge.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MicForge"
              xmlns:tray="https://github.com/lukr-99/dotnetlib/tray"
              Foreground="{DynamicResource TextBrush}">
     <tray:SettingsPage Title="Settings">
@@ -60,8 +61,8 @@
             <tray:ButtonRow Label="Release notes" Hint="Read changes or download an installer."
                             ButtonText="Open" Command="{Binding OpenReleaseNotesCommand}" />
         </tray:SettingsSection>
-        <tray:SettingsSection SectionId="about" Title="About" Description="A real-time microphone processor for Windows.">
-            <tray:InfoRow Label="License" Value="PolyForm Noncommercial 1.0.0" />
+        <tray:SettingsSection SectionId="about" Title="About" Description="Who made MicForge, and what it is built on.">
+            <local:AboutPanel />
         </tray:SettingsSection>
     </tray:SettingsPage>
 </UserControl>

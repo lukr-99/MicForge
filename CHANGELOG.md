@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Add a themed About page in Settings: the author's credit, feedback links (Instagram, GitHub, Issues),
+  the app's facts and the licences of what ships with MicForge.
+
 ## 1.10.1
 
 - Fix following the Windows default mic. The restart failed with "The selected audio device
