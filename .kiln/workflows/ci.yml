@@ -1,0 +1,27 @@
+# Local (Kiln) version of .github/workflows/ci.yml. Run it with:
+#   kiln run .kiln/workflows/ci.yml --repo .
+# GitHub runs restore, format, build and tests on windows-latest. MicForge references DotNetLib packages
+# from a private NuGet feed and Kiln has no DOTNETLIB_PACKAGES_TOKEN secret set, so restore cannot run
+# here. What runs: the whitespace format check, which needs no restore (it reads the files only).
+# Left out, still run by GitHub Actions: restore, full format check, build with -warnaserror and the
+# tests (WPF, net10.0-windows). The steps are in ci-github-only.yml for when the secret is set.
+name: CI
+
+on:
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  format:
+    name: Whitespace format check (Linux)
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:10.0
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check whitespace formatting
+        run: dotnet format whitespace . --folder --verify-no-changes
