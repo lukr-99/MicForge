@@ -1,144 +1,125 @@
 # MicForge
 
-A real-time microphone processor for Windows. It captures your mic, runs a deep, fully
-configurable DSP chain, and outputs to a virtual audio device so **any** app (Discord, OBS,
-games, browser, calls) uses the cleaned-up, shaped signal as its "microphone".
+MicForge is a real-time microphone processor for Windows. It reads your mic, runs it through a
+configurable audio chain, and sends the cleaned-up result to a virtual microphone. Any app that
+records a mic, such as Discord, OBS, a game, or a browser call, can then use the processed voice.
 
-Written in **C# / .NET 10 / WPF** using [NAudio](https://github.com/naudio/NAudio) for WASAPI
-capture and render. All DSP is **hand-written** (no VST/plugin host). The tray and settings UI
-use **DotNetLib.Tray**; processor controls remain custom.
+## Status
 
-> See [ARCHITECTURE.md](ARCHITECTURE.md) for the code layout and design, and
-> [ROADMAP.md](ROADMAP.md) for where it's going.
+- Version 1.10.1, released 2026-10-13.
+- The main branch has an unreleased About page in Settings. See [CHANGELOG.md](CHANGELOG.md).
 
-## Highlights
+## Features
 
-- **23-stage DSP chain**, every stage toggle-able, tunable live, and **drag-to-reorder**.
-- **Crafting tab** — stack "voice character" cards (Deep, Bright, Radio, Megaphone, Robot…)
-  with intensity sliders to design a voice with no technical knobs; JSON-configurable, with a
-  built-in preview voice so you can hear it without talking.
-- **Meters/analyzer tab** — live spectrogram, signal-flow diagram, and a full loudness suite
-  (momentary / short-term / integrated LUFS, LRA, true-peak).
-- **Presets** — built-in voice profiles + your own preset folder that auto-loads; plus quick
-  EQ-curve presets on the equalizer.
-- **Reliability** — device auto-reconnect, follow-the-default-mic, an audio watchdog, crash
-  logging, and single-instance launch.
-- **Daily use** — global hotkeys, push-to-talk / push-to-mute, a mute overlay, a live tray
-  icon, and minimize/close to tray with an optional "Start with Windows".
+- A 23-stage audio chain. Each stage can be turned on or off, tuned while audio runs, and moved
+  by dragging its card.
+- Crafting tab: stack voice effects such as Deep, Bright, Radio, and Robot, each with an intensity
+  slider. Card definitions are JSON. A preview voice lets you hear the result.
+- Meters tab: live spectrogram, signal-flow diagram, and loudness readings (momentary,
+  short-term, integrated LUFS, loudness range, and true peak).
+- Presets: built-in voice profiles, plus your own preset folder that loads automatically.
+- Reliability: reconnects when a device drops, follows the default mic, has an audio watchdog,
+  writes a crash log, and allows one running instance.
+- Daily use: global hotkeys, push-to-talk, push-to-mute, a mute overlay, a tray icon, and an
+  optional start with Windows.
 
 ## Signal chain
 
+```text
+Input gain > Auto gain > High-pass > Hum remover > De-plosive
+  > Noise suppression (RNNoise) > Gate > Expander > De-click
+  > Keystroke suppressor > De-reverb > Echo remover > Equalizer
+  > Compressor > Multiband > De-esser > Saturation > Exciter
+  > Voice changer > Comfort noise > Limiter > Output gain > Loudness > virtual mic
 ```
-Input gain ─▶ Auto gain ─▶ High-pass ─▶ Hum remover ─▶ De-plosive
-  ─▶ Noise suppression (RNNoise) ─▶ Gate ─▶ Expander ─▶ De-click
-  ─▶ Keystroke suppressor ─▶ De-reverb ─▶ Echo remover ─▶ Equalizer
-  ─▶ Compressor ─▶ Multiband ─▶ De-esser ─▶ Saturation ─▶ Exciter
-  ─▶ Voice changer ─▶ Comfort noise ─▶ Limiter ─▶ Output gain ─▶ Loudness ─▶ virtual mic
-```
 
-The order above is the default — you can rearrange stages by dragging their cards. Everything
-runs internally at **mono, 32-bit float, 48 kHz**.
-
-## The tabs
-
-- **Processor** — the chain as cards (Sliders ⇄ Graphs view). Interactive EQ curve + spectrum,
-  compressor transfer curve, gate/de-esser/limiter meters, in/out level meters, clip
-  indicators, mic-health readout.
-- **Crafting** — character cards, filterable by category (Tone / Polish / Fun / FX), with a
-  live preview voice and per-card info + "technical peek".
-- **Meters** — spectrogram, signal-flow, loudness suite.
-- **Shortcuts** — configure global hotkeys and push-to-talk.
-- **Settings**: one scrolling page with section cards, responsive jump navigation and save feedback.
-  Includes monitoring, reliability, startup/tray, profile export/import, presets, undo/redo and updates.
+This is the default order. Drag the cards to change it. The chain runs internally as mono,
+32-bit float, 48 kHz audio.
 
 ## Requirements
 
-1. **Windows 10/11 (x64).**
-2. **[VB-CABLE](https://vb-audio.com/Cable/)** (free) — creates the virtual mic. After
-   installing, MicForge sends audio to **"CABLE Input"**, and in your app you pick
-   **"CABLE Output"** as the microphone.
+- Windows 10 or 11, 64-bit.
+- [VB-CABLE](https://vb-audio.com/Cable/), a free virtual audio device. MicForge sends audio to
+  "CABLE Input", and the app you use picks "CABLE Output" as its microphone.
+- To run the installer, nothing else is needed. The installer includes the .NET runtime.
+- To build from source, the .NET 10 SDK.
 
-The installer is self-contained (bundles the .NET runtime), so no separate .NET install is
-needed to *run* it. To *build*, you need the **.NET 10 SDK**.
+## Quick start
 
-## Usage
+1. Install VB-CABLE and restart Windows.
+2. Start MicForge.
+3. Set Input to your real mic. Output should be "CABLE Input (VB-Audio Virtual Cable)". MicForge
+   selects it when it finds it.
+4. Click Start, speak, and adjust. A preset is a good starting point.
+5. In Discord, OBS, or another app, set the microphone to "CABLE Output".
 
-1. Install VB-CABLE and reboot.
-2. Run MicForge.
-3. **Input** = your real mic. **Output** = `CABLE Input (VB-Audio Virtual Cable)` (auto-selected
-   if found).
-4. Click **Start**, speak, and tune. Pick a preset to get going fast.
-5. In Discord/OBS/etc., set the microphone to `CABLE Output`.
+To hear yourself while you tune, turn on Monitoring in Settings and pick your headphones. Expect
+some delay. The two-device WASAPI path adds it.
 
-To monitor yourself while tuning, enable **Monitoring** in Settings and choose your headphones
-(expect a little latency — normal for the two-device WASAPI path).
+## Build and test
 
-## RNNoise AI noise suppression
+Run these from the repository root. You need the .NET 10 SDK.
 
-A 64-bit `rnnoise.dll` — built from the official [xiph/rnnoise](https://github.com/xiph/rnnoise)
-source — is bundled in [`native/`](native/) and copied next to the exe on build, so the Noise
-Suppression stage works out of the box (BSD license in
-[`native/RNNOISE-LICENSE.txt`](native/RNNOISE-LICENSE.txt)). You can also point the app at a
-different `rnnoise.dll` via the card's **Load…** button; the loader validates the exports
-before enabling the stage.
-
-## Where your data lives
-
-Everything is under `%AppData%\MicForge\` so it survives uninstall/reinstall:
-
-- `micforge.json` — your full setup (chain params, devices, stage order, hotkeys, crafting,
-  last preset, theme)
-- `craftcards.json` — Crafting card definitions (editable; built-ins refresh on update)
-- `presets\*.json` — your saved presets (auto-loaded into the dropdown)
-- `samples\*.wav` — your own Crafting preview voices
-- `logs\micforge.log` — rolling log + crash capture
-
-## Building & packaging
-
-```bash
-# restore (requires read:packages credentials for the dotnetlib source)
+```powershell
 dotnet restore MicForge.csproj
-
-# build / run
 dotnet build -c Release
-dotnet run   -c Release
-
-# compatibility, tray state and WPF settings tests
+dotnet run -c Release
 dotnet test tests/MicForge.Tests/MicForge.Tests.csproj -c Release
-
-# formatting (CI runs these with --verify-no-changes)
-dotnet format MicForge.csproj
-dotnet format tests/MicForge.Tests/MicForge.Tests.csproj
-
-# self-contained publish (what the installer bundles)
-dotnet publish -c Release -r win-x64 --self-contained true
-
-# installer (Inno Setup 6): installer/MicForge.iss  ->  MicForge-Setup-x.y.z.exe
 ```
 
-The bundled preview voice clip is a CC BY-NC excerpt — see
-[`assets/VOICE-SAMPLE-LICENSE.txt`](assets/VOICE-SAMPLE-LICENSE.txt) for attribution.
+Restore needs access to the private DotNetLib package feed on GitHub Packages. Set the
+`NuGetPackageSourceCredentials_dotnetlib` environment variable, or add the credentials to your
+user NuGet configuration. Do not put tokens in this repository.
+
+Formatting check, as CI runs it:
+
+```powershell
+dotnet format MicForge.csproj --verify-no-changes
+dotnet format tests/MicForge.Tests/MicForge.Tests.csproj --verify-no-changes
+```
+
+## Architecture
+
+The code layout, the audio engine, and the DSP stages are described in
+[ARCHITECTURE.md](ARCHITECTURE.md). Planned work is listed in [ROADMAP.md](ROADMAP.md). Those
+items are not built yet.
+
+## Data safety
+
+All data lives under `%AppData%\MicForge\`, so it survives an uninstall and reinstall:
+
+- `micforge.json`: your setup, including chain settings, devices, stage order, hotkeys, theme,
+  and the last preset.
+- `craftcards.json`: Crafting card definitions. You can edit them. Built-in cards refresh on update.
+- `presets\*.json`: your saved presets.
+- `samples\*.wav`: your own Crafting preview voices.
+- `logs\micforge.log`: a rolling log and crash capture.
+
+The app checks GitHub for a newer release when it starts and when you check in Settings.
+Back up `%AppData%\MicForge\` before you install a new version. See
+[docs/RELEASING.md](docs/RELEASING.md) for the update process.
+
+## Delivery
+
+Releases are built with [installer/build-installer.ps1](installer/build-installer.ps1). It
+publishes a self-contained win-x64 build and compiles the Inno Setup script
+[installer/MicForge.iss](installer/MicForge.iss) into `MicForge-Setup-<version>.exe`. The
+installer is a per-user install and does not need admin rights. The steps for publishing a release
+are in [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Notes
 
-- Capture and render run on two independent device clocks; a 500 ms input buffer plus overflow
-  discard absorbs the drift. Great for voice; not sample-accurate.
-- The Echo Remover targets slap-back / speaker-bleed echo of your *own* voice (single-channel,
-  no far-end reference) — it is not full duplex acoustic echo cancellation.
+- Capture and output run on two separate device clocks. A 500 ms input buffer and overflow
+  discard absorb the drift. This works well for voice, but the timing is not sample-accurate.
+- The Echo Remover reduces slap-back and speaker bleed of your own voice. It uses one channel and
+  no far-end reference, so it is not full acoustic echo cancellation.
+- The RNNoise noise suppressor is a 64-bit `rnnoise.dll` built from the xiph/rnnoise source. It
+  sits in [native/](native/), and its BSD license is in
+  [native/RNNOISE-LICENSE.txt](native/RNNOISE-LICENSE.txt). You can load a different `rnnoise.dll`
+  with the card's Load button. The app checks its exports before it enables the stage.
+- The bundled Crafting preview voice is a CC BY-NC excerpt. See
+  [assets/VOICE-SAMPLE-LICENSE.txt](assets/VOICE-SAMPLE-LICENSE.txt) for attribution.
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE.md) — free for noncommercial use.
-
-## Shared tray and settings kit
-
-`DotNetLib.Core` and `DotNetLib.Tray` 0.4.1 come from the private GitHub Packages feed in
-`nuget.config`. Set credentials for the `dotnetlib` source in your user NuGet configuration,
-or provide `NuGetPackageSourceCredentials_dotnetlib` in the environment with
-`Username=<GitHub user>;Password=<read:packages token>`. Keep credentials out of this repository.
-
-The tray opens MicForge on a left click. Its menu shows processing status and provides start/stop,
-mute, bypass, Settings, startup and theme controls. System, Light and Dark apply without restarting;
-high contrast follows Windows. Existing settings files default to Dark when they have no theme
-field. Settings and presets stay in the same AppData folder. The migration does not install or
-publish an app release.
+[PolyForm Noncommercial 1.0.0](LICENSE.md). You may use it for noncommercial purposes.
